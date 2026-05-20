@@ -1,0 +1,279 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id                String             @id @default(cuid())
+  name              String
+  slug              String             @unique
+  createdAt         DateTime           @default(now())
+  users             User[]
+  tests             Test[]
+  candidateProfiles CandidateProfile[]
+}
+
+model User {
+  id            String       @id @default(cuid())
+  email         String       @unique
+  name          String
+  emailVerified Boolean      @default(false)
+  image         String?
+  role          Role         @default(COMPANY_ADMIN)
+  companyId     String?
+  company       Company?     @relation(fields: [companyId], references: [id])
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+  members       Member[]
+  invitations   Invitation[]
+}
+
+model Session {
+  id                   String   @id @default(cuid())
+  expiresAt            DateTime
+  token                String   @unique
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  ipAddress            String?
+  userAgent            String?
+  activeOrganizationId String?
+  userId               String
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+}
+
+model Verification {
+  id         String    @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime? @updatedAt
+}
+
+model Organization {
+  id          String       @id @default(cuid())
+  name        String
+  slug        String?      @unique
+  logo        String?
+  createdAt   DateTime     @default(now())
+  metadata    String?
+  members     Member[]
+  invitations Invitation[]
+}
+
+model Member {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           String
+  createdAt      DateTime     @default(now())
+
+  @@unique([organizationId, userId])
+}
+
+model Invitation {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  email          String
+  role           String?
+  status         String
+  expiresAt      DateTime
+  inviterId      String
+  inviter        User         @relation(fields: [inviterId], references: [id], onDelete: Cascade)
+}
+
+enum Role {
+  SUPER_ADMIN
+  COMPANY_ADMIN
+  CORRECTOR
+}
+
+model Test {
+  id                     String        @id @default(cuid())
+  companyId              String
+  company                Company       @relation(fields: [companyId], references: [id])
+  title                  String
+  description            String?
+  category               TestCategory
+  timeLimitMinutes       Int?
+  isActive               Boolean       @default(true)
+  shuffleQuestions       Boolean       @default(false)
+  showResultsToCandidate Boolean       @default(false)
+  passingThreshold       Float?
+  scoringConfig          Json
+  createdAt              DateTime      @default(now())
+  subTests               SubTest[]
+  sessions               TestSession[]
+  attempts               Attempt[]
+}
+
+enum TestCategory {
+  PERSONALITY
+  IQ_LOGIC
+  INTERVIEW
+  KAHOOT
+  COMPOSITE
+  CUSTOM
+}
+
+model SubTest {
+  id            String     @id @default(cuid())
+  testId        String
+  test          Test       @relation(fields: [testId], references: [id])
+  title         String
+  description   String?
+  order         Int
+  timeLimitSecs Int?
+  isEnabled     Boolean    @default(true)
+  scoringConfig Json
+  questions     Question[]
+  responses     Response[]
+}
+
+model Question {
+  id            String       @id @default(cuid())
+  subTestId     String
+  subTest       SubTest      @relation(fields: [subTestId], references: [id])
+  body          String
+  type          QuestionType
+  order         Int
+  options       Json?
+  correctAnswer String?
+  weight        Float        @default(1.0)
+  dimension     String?
+  scoringHint   String?
+  responses     Response[]
+}
+
+enum QuestionType {
+  MCQ
+  ESSAY
+  SCALE
+  RANKING
+  TRUE_FALSE
+  OPEN
+}
+
+model TestSession {
+  id                String    @id @default(cuid())
+  testId            String
+  test              Test      @relation(fields: [testId], references: [id])
+  code              String    @unique
+  label             String?
+  enabledSubtestIds String[]
+  expiresAt         DateTime?
+  maxUses           Int?
+  useCount          Int       @default(0)
+  isActive          Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  attempts          Attempt[]
+}
+
+model Attempt {
+  id             String          @id @default(cuid())
+  testId         String
+  test           Test            @relation(fields: [testId], references: [id])
+  sessionId      String?
+  session        TestSession?    @relation(fields: [sessionId], references: [id])
+  candidateName  String
+  candidateEmail String
+  startedAt      DateTime        @default(now())
+  submittedAt    DateTime?
+  status         AttemptStatus   @default(IN_PROGRESS)
+  responses      Response[]
+  proctoringLogs ProctoringLog[]
+  result         Result?
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  SUBMITTED
+  UNDER_REVIEW
+  REVIEWED
+}
+
+model Response {
+  id            String     @id @default(cuid())
+  attemptId     String
+  attempt       Attempt    @relation(fields: [attemptId], references: [id])
+  questionId    String
+  question      Question   @relation(fields: [questionId], references: [id])
+  subTestId     String
+  subTest       SubTest    @relation(fields: [subTestId], references: [id])
+  answer        String
+  autoScore     Float?
+  llmScore      Float?
+  llmFeedback   String?
+  llmConfidence String?
+  manualScore   Float?
+  finalScore    Float?
+}
+
+model Result {
+  id            String    @id @default(cuid())
+  attemptId     String    @unique
+  attempt       Attempt   @relation(fields: [attemptId], references: [id])
+  totalScore    Float?
+  subtestScores Json?
+  dimensionMap  Json?
+  profile       String?
+  profileLabel  String?
+  summary       String?
+  isPassed      Boolean?
+  reviewedBy    String?
+  reviewedAt    DateTime?
+}
+
+model ProctoringLog {
+  id        String          @id @default(cuid())
+  attemptId String
+  attempt   Attempt         @relation(fields: [attemptId], references: [id])
+  event     ProctoringEvent
+  metadata  Json?
+  createdAt DateTime        @default(now())
+}
+
+enum ProctoringEvent {
+  TAB_SWITCH
+  FOCUS_LOSS
+  FULLSCREEN_EXIT
+  SNAPSHOT
+}
+
+model CandidateProfile {
+  id               String   @id @default(cuid())
+  companyId        String
+  company          Company  @relation(fields: [companyId], references: [id])
+  candidateEmail   String
+  label            String
+  attemptIds       String[]
+  compositeScore   Float?
+  compositeSummary String?
+  createdAt        DateTime @default(now())
+}
