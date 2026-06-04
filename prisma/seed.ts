@@ -29,14 +29,25 @@ async function createUsers(companyId: string) {
   });
 
   for (const user of [superAdmin, admin, corrector]) {
-    await prisma.account.create({
-      data: {
+    const existingAccount = await prisma.account.findFirst({
+      where: { userId: user.id, providerId: "credential" },
+    });
+
+    if (existingAccount) {
+      await prisma.account.update({
+        where: { id: existingAccount.id },
+        data: { password },
+      });
+    } else {
+      await prisma.account.create({
+        data: {
         accountId: user.id,
         providerId: "credential",
         userId: user.id,
         password,
-      },
-    });
+        },
+      });
+    }
   }
 }
 
