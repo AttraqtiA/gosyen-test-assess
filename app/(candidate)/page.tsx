@@ -2,15 +2,27 @@ import Link from "next/link";
 
 export default function CandidateLanding() {
   return (
-    <main className="container-page grid min-h-screen content-center py-10">
-      <section className="panel mx-auto grid w-full max-w-xl gap-5 p-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-950">Gosyen Assess</h1>
-          <p className="mt-2 text-sm text-slate-600">Enter your session code to start an assessment.</p>
+    <main className="subtle-grid grid min-h-screen content-center py-10">
+      <section className="container-page grid gap-8 lg:grid-cols-[1fr_420px] lg:items-center">
+        <div className="max-w-2xl">
+          <p className="eyebrow">Candidate assessment portal</p>
+          <h1 className="mt-4 text-4xl font-semibold tracking-normal text-slate-950 md:text-5xl">Gosyen Assess</h1>
+          <p className="mt-4 max-w-xl text-base leading-7 text-slate-600">
+            A focused, secure test-taking experience for structured hiring assessments, logic tests, interviews, and personality profiles.
+          </p>
         </div>
-        <Link href="/take" className="inline-flex h-10 items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-medium text-white">
-          Start assessment
-        </Link>
+        <div className="panel grid gap-5 p-6">
+          <div>
+            <h2 className="text-xl font-semibold text-slate-950">Start your assessment</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">Use the session code provided by your assessment administrator.</p>
+          </div>
+          <Link href="/take" className="button-primary">
+            Enter session code
+          </Link>
+          <Link href="/login" className="button-secondary">
+            Administrator login
+          </Link>
+        </div>
       </section>
     </main>
   );

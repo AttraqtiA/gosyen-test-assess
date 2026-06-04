@@ -15,10 +15,11 @@ export default async function DashboardPage() {
     <main className="container-page grid gap-6 py-8">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">Dashboard</h1>
-          <p className="text-sm text-slate-600">{user.email}</p>
+          <p className="eyebrow">Company workspace</p>
+          <h1 className="mt-2 text-3xl font-semibold">Dashboard</h1>
+          <p className="mt-1 text-sm text-slate-600">{user.email}</p>
         </div>
-        <Link href="/dashboard/tests/new" className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white">
+        <Link href="/dashboard/tests/new" className="button-primary">
           New test
         </Link>
       </header>
@@ -28,15 +29,15 @@ export default async function DashboardPage() {
           ["Attempts", attempts],
           ["Under review", reviews],
         ].map(([label, value]) => (
-          <div key={label} className="panel p-5">
+          <div key={label} className="panel stat-card p-5">
             <div className="text-sm text-slate-500">{label}</div>
             <div className="mt-2 text-3xl font-semibold">{value}</div>
           </div>
         ))}
       </section>
-      <nav className="panel grid gap-2 p-4 text-sm">
-        <Link href="/dashboard/tests">Tests</Link>
-        <Link href="/dashboard/corrector">Manual review queue</Link>
+      <nav className="panel grid gap-3 p-4 text-sm md:grid-cols-2">
+        <Link className="button-secondary justify-start" href="/dashboard/tests">Tests</Link>
+        <Link className="button-secondary justify-start" href="/dashboard/corrector">Manual review queue</Link>
       </nav>
     </main>
   );
