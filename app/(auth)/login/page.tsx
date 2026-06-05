@@ -1,33 +1,46 @@
 export default function LoginPage() {
   return (
-    <main className="subtle-grid grid min-h-screen content-center py-10">
-      <section className="container-page grid gap-8 lg:grid-cols-[1fr_420px] lg:items-center">
-        <div className="max-w-2xl">
-          <p className="eyebrow">Gosyen operations</p>
-          <h1 className="mt-4 text-4xl font-semibold text-slate-950 md:text-5xl">Assessment command center</h1>
-          <p className="mt-4 max-w-xl text-base leading-7 text-slate-600">
-            Manage tests, candidate sessions, scoring review, and Excel exports from one tenant-scoped dashboard.
-          </p>
-        </div>
-        <div className="panel grid gap-5 p-6">
-          <div>
-            <h2 className="text-xl font-semibold">Admin access</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              Better Auth routes are mounted at <code>/api/auth/*</code>. Development mode falls back to the seeded company admin so the dashboard remains testable locally.
+    <main className="container-page page-stack">
+      <section className="hero-panel">
+        <div className="hero-content lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+          <div className="hero-copy">
+            <p className="eyebrow">Gosyen operations</p>
+            <h1 className="hero-title">Create exams, publish codes, and monitor results from one place.</h1>
+            <p className="hero-body">
+              The admin side is built around test creation, cohort-specific session codes, and result review. It is meant to feel closer to a modern exam command center than a generic CRUD panel.
             </p>
           </div>
-          <div className="grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm">
-            <div className="font-semibold text-slate-900">Seeded local accounts</div>
-            <div className="grid gap-1 text-slate-600">
-              <span>Admin: admin@gosyen.com</span>
-              <span>Reviewer: corrector@gosyen.com</span>
-              <span>Super admin: superadmin@gosyen.com</span>
-              <span>Password: password123</span>
+          <div className="panel grid gap-5 p-6 md:p-8">
+            <div>
+              <h2 className="text-2xl font-semibold">Admin access</h2>
+              <p className="mt-2 text-sm leading-7 text-[var(--muted)]">
+                Enter your organization credentials to manage tests, sessions, reviews, and exports.
+              </p>
             </div>
+            <form className="grid gap-4">
+              <label className="grid gap-2 text-sm font-medium text-[var(--foreground)]">
+              Email address
+              <input
+                className="input-shell"
+                name="email"
+                type="email"
+                autoComplete="email"
+              />
+            </label>
+              <label className="grid gap-2 text-sm font-medium text-[var(--foreground)]">
+              Password
+              <input
+                className="input-shell"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+              />
+            </label>
+            </form>
+            <a href="/dashboard" className="button-primary">
+              Open dashboard
+            </a>
           </div>
-          <a href="/dashboard" className="button-primary">
-            Open dashboard
-          </a>
         </div>
       </section>
     </main>

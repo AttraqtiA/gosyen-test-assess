@@ -100,14 +100,23 @@ function TakePageContent() {
 
   if (!test) {
     return (
-      <main className="container-page grid min-h-screen content-center py-10">
-        <section className="panel mx-auto grid w-full max-w-xl gap-4 p-6">
-          <h1 className="text-2xl font-semibold">Start assessment</h1>
+      <main className="container-page page-stack">
+        <section className="hero-panel">
+          <div className="hero-content lg:grid-cols-[1fr_420px] lg:items-center">
+            <div className="hero-copy">
+              <p className="eyebrow">Join with a code</p>
+              <h1 className="hero-title">Enter your exam code and begin the assessment flow.</h1>
+              <p className="hero-body">This join screen is tuned for the Kahoot-style pattern you described: admin creates the exam, generates a code, and the assessee enters that code here.</p>
+            </div>
+            <div className="panel grid gap-4 p-6">
+              <h2 className="text-2xl font-semibold">Start assessment</h2>
           <Input placeholder="Session code" value={code} onChange={(event) => setCode(event.target.value.toUpperCase())} />
           <Input placeholder="Full name" value={candidateName} onChange={(event) => setCandidateName(event.target.value)} />
           <Input placeholder="Email" type="email" value={candidateEmail} onChange={(event) => setCandidateEmail(event.target.value)} />
           {error && <p className="text-sm text-red-600">{error}</p>}
           <Button onClick={start}>Begin</Button>
+            </div>
+          </div>
         </section>
       </main>
     );

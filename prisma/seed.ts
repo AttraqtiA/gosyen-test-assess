@@ -1,5 +1,6 @@
-import { PrismaClient, QuestionType, Role, TestCategory } from "@prisma/client";
+import { AttemptStatus, PrismaClient, QuestionType, Role, TestCategory, type Question, type SubTest, type Test, type TestSession } from "@prisma/client";
 import { hashPassword } from "better-auth/crypto";
+import { scoreAttempt, type ScoredResponse } from "../lib/scoring";
 
 const prisma = new PrismaClient();
 
@@ -9,6 +10,167 @@ const option = (id: string, label: string, value?: number, dimension?: string) =
   value,
   dimension,
 });
+
+type SeededQuestion = Question & { subTest: SubTest };
+type SeededTest = Test & {
+  subTests: Array<SubTest & { questions: Question[] }>;
+  sessions: TestSession[];
+};
+
+function buildScaleAnswers(questions: SeededQuestion[], favoriteDimension: string) {
+  return Object.fromEntries(
+    questions.map((question) => {
+      const value = question.dimension === favoriteDimension ? "5" : question.dimension === "S" ? "3" : "2";
+      return [question.id, value];
+    }),
+  );
+}
+
+function buildMcqAnswers(questions: SeededQuestion[], accuracy: number) {
+  return Object.fromEntries(
+    questions.map((question, index) => {
+      const fallback = ["A", "B", "C", "D"][(index + 1) % 4] ?? "A";
+      const shouldBeCorrect = index / Math.max(questions.length, 1) < accuracy;
+      return [question.id, shouldBeCorrect ? (question.correctAnswer ?? "A") : fallback];
+    }),
+  );
+}
+
+function buildEssayScores(questions: SeededQuestion[], scores: number[]) {
+  return Object.fromEntries(
+    questions.map((question, index) => [
+      question.id,
+      {
+        answer: `Candidate response for ${question.body.toLowerCase()} with practical examples and outcomes.`,
+        llmScore: scores[index] ?? 70,
+      },
+    ]),
+  );
+}
+
+async function createScoredAttempt(
+  test: SeededTest,
+  session: TestSession,
+  candidateName: string,
+  candidateEmail: string,
+  answerFactory: (questions: SeededQuestion[]) => Record<string, string | { answer: string; llmScore?: number; manualScore?: number }>,
+  status: AttemptStatus = AttemptStatus.REVIEWED,
+) {
+  const enabledSubtests = test.subTests.filter((subTest) => session.enabledSubtestIds.includes(subTest.id));
+  const questions = enabledSubtests.flatMap((subTest) => subTest.questions.map((question) => ({ ...question, subTest })));
+  const rawAnswers = answerFactory(questions);
+  const responseInputs = questions.map((question) => {
+    const raw = rawAnswers[question.id];
+    if (typeof raw === "string") {
+      return { questionId: question.id, answer: raw, manualScore: null, llmScore: null, autoScore: null };
+    }
+    return {
+      questionId: question.id,
+      answer: raw?.answer ?? "",
+      manualScore: raw?.manualScore ?? null,
+      llmScore: raw?.llmScore ?? null,
+      autoScore: null,
+    };
+  });
+
+  const scoring = scoreAttempt(test, enabledSubtests, questions, responseInputs);
+  const attempt = await prisma.attempt.create({
+    data: {
+      testId: test.id,
+      sessionId: session.id,
+      candidateName,
+      candidateEmail,
+      startedAt: new Date(),
+      submittedAt: new Date(),
+      status,
+    },
+  });
+
+  const scoredResponses = new Map(scoring.responses.map((response) => [response.questionId, response] satisfies [string, ScoredResponse]));
+
+  await prisma.response.createMany({
+    data: responseInputs.map((response) => {
+      const scored = scoredResponses.get(response.questionId);
+      const question = questions.find((item) => item.id === response.questionId);
+      return {
+        attemptId: attempt.id,
+        questionId: response.questionId,
+        subTestId: question?.subTestId ?? "",
+        answer: response.answer,
+        autoScore: scored?.autoScore ?? null,
+        llmScore: response.llmScore,
+        manualScore: response.manualScore,
+        finalScore: scored?.finalScore ?? null,
+      };
+    }),
+  });
+
+  await prisma.result.create({
+    data: {
+      attemptId: attempt.id,
+      ...scoring.result,
+      reviewedAt: new Date(),
+    },
+  });
+
+  await prisma.proctoringLog.createMany({
+    data: [
+      { attemptId: attempt.id, event: "TAB_SWITCH", metadata: { note: "Seeded demo event" } },
+      { attemptId: attempt.id, event: "FOCUS_LOSS", metadata: { note: "Seeded demo event" } },
+    ],
+  });
+
+  await prisma.testSession.update({
+    where: { id: session.id },
+    data: { useCount: { increment: 1 } },
+  });
+}
+
+async function createDemoAttempts(companyId: string) {
+  const tests = await prisma.test.findMany({
+    where: { companyId },
+    include: {
+      sessions: true,
+      subTests: {
+        include: { questions: { orderBy: { order: "asc" } } },
+        orderBy: { order: "asc" },
+      },
+    },
+  });
+
+  const disc = tests.find((test) => test.title === "DISC Personality");
+  const logic = tests.find((test) => test.title === "Logic & IQ");
+  const ist = tests.find((test) => test.title === "IST Intelligence Battery");
+  const interview = tests.find((test) => test.title === "Interview Assessment");
+
+  if (disc && disc.sessions[0]) {
+    await createScoredAttempt(disc, disc.sessions[0], "Alya Putri", "alya.putri@example.com", (questions) => buildScaleAnswers(questions, "D"));
+    await createScoredAttempt(disc, disc.sessions[0], "Rafi Nugraha", "rafi.nugraha@example.com", (questions) => buildScaleAnswers(questions, "I"));
+  }
+
+  if (logic && logic.sessions[0]) {
+    await createScoredAttempt(logic, logic.sessions[0], "Nadia Saputra", "nadia.saputra@example.com", (questions) => buildMcqAnswers(questions, 0.8));
+    await createScoredAttempt(logic, logic.sessions[0], "Dimas Pratama", "dimas.pratama@example.com", (questions) => buildMcqAnswers(questions, 0.5));
+  }
+
+  if (ist) {
+    const sessionAll = ist.sessions.find((session) => session.code === "IST001");
+    const sessionSelective = ist.sessions.find((session) => session.code === "IST002");
+    if (sessionAll) {
+      await createScoredAttempt(ist, sessionAll, "Sarah Wijaya", "sarah.wijaya@example.com", (questions) => buildMcqAnswers(questions, 0.84));
+      await createScoredAttempt(ist, sessionAll, "Andi Maulana", "andi.maulana@example.com", (questions) => buildMcqAnswers(questions, 0.64));
+    }
+    if (sessionSelective) {
+      await createScoredAttempt(ist, sessionSelective, "Kevin Halim", "kevin.halim@example.com", (questions) => buildMcqAnswers(questions, 0.72));
+      await createScoredAttempt(ist, sessionSelective, "Mira Lestari", "mira.lestari@example.com", (questions) => buildMcqAnswers(questions, 0.56));
+    }
+  }
+
+  if (interview && interview.sessions[0]) {
+    await createScoredAttempt(interview, interview.sessions[0], "Citra Maharani", "citra.maharani@example.com", (questions) => buildEssayScores(questions, [88, 84, 91, 85, 90]));
+    await createScoredAttempt(interview, interview.sessions[0], "Bagas Ramadhan", "bagas.ramadhan@example.com", (questions) => buildEssayScores(questions, [74, 71, 78, 73, 76]));
+  }
+}
 
 async function createUsers(companyId: string) {
   const password = await hashPassword("password123");
@@ -247,6 +409,7 @@ async function main() {
   await createLogic(company.id);
   await createIst(company.id);
   await createInterview(company.id);
+  await createDemoAttempts(company.id);
 }
 
 main()

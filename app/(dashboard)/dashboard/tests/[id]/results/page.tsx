@@ -16,12 +16,21 @@ export default async function ResultsPage({ params }: { params: Promise<{ id: st
     notFound();
   }
   return (
-    <main className="container-page grid gap-5 py-8">
+    <main className="container-page page-stack">
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">{test.title} results</h1>
+        <div>
+          <p className="eyebrow">Results workspace</p>
+          <h1 className="mt-2 text-3xl font-semibold">{test.title} results</h1>
+        </div>
         <ExportButton kind="batch" testId={test.id} />
       </header>
-      <section className="panel overflow-x-auto">
+      <section className="panel table-shell overflow-x-auto">
+        {test.attempts.length === 0 ? (
+          <div className="empty-state p-8">
+            <h2 className="text-2xl font-semibold">No candidate submissions yet</h2>
+            <p>Generate a session code, let a candidate submit, or reseed demo data to see scored attempts here.</p>
+          </div>
+        ) : (
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="border-b bg-slate-100 text-left">
@@ -50,6 +59,7 @@ export default async function ResultsPage({ params }: { params: Promise<{ id: st
             ))}
           </tbody>
         </table>
+        )}
       </section>
     </main>
   );

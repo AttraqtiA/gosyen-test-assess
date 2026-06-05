@@ -29,7 +29,17 @@ function normalizeVarName(label: string): string {
 }
 
 function evaluateExpression(expression: string, variables: Record<string, number>): number | boolean | null {
-  const names = Object.keys(variables);
+  const referencedNames = Array.from(new Set(expression.match(/[A-Za-z_$][A-Za-z0-9_$]*/g) ?? []));
+  const safeVariables: Record<string, number> = { ...variables };
+  const reservedNames = new Set(["true", "false", "null", "undefined"]);
+
+  referencedNames.forEach((name) => {
+    if (!reservedNames.has(name) && safeVariables[name] === undefined) {
+      safeVariables[name] = 0;
+    }
+  });
+
+  const names = Object.keys(safeVariables);
   const invalidIdentifiers = names.filter((name) => !/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(name));
   if (invalidIdentifiers.length > 0) {
     return null;
@@ -38,7 +48,7 @@ function evaluateExpression(expression: string, variables: Record<string, number
     return null;
   }
   const fn = new Function(...names, `"use strict"; return (${expression});`) as (...args: number[]) => unknown;
-  const result = fn(...names.map((name) => variables[name] ?? 0));
+  const result = fn(...names.map((name) => safeVariables[name] ?? 0));
   if (typeof result === "number" && Number.isFinite(result)) {
     return result;
   }
