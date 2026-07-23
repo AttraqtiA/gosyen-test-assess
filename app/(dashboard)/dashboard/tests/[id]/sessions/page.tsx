@@ -16,10 +16,11 @@ export default async function SessionsPage({ params }: { params: Promise<{ id: s
   }
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   return (
-    <main className="container-page grid gap-5 py-8">
+    <main className="container-page page-stack">
       <header>
-        <h1 className="text-2xl font-semibold">{test.title} sessions</h1>
-        <p className="text-sm text-slate-600">Create cohort-specific session codes and choose enabled subtests.</p>
+        <p className="eyebrow">Session codes</p>
+        <h1 className="mt-2 text-3xl font-semibold">{test.title} sessions</h1>
+        <p className="mt-2 text-sm leading-7 text-[var(--muted)]">Generate cohort-specific access codes, control enabled subtests, and share the direct candidate entry link.</p>
       </header>
       <SessionCreator testId={test.id} subTests={test.subTests.map((subTest) => ({ id: subTest.id, title: subTest.title }))} />
       <section className="grid gap-3">
@@ -27,13 +28,13 @@ export default async function SessionsPage({ params }: { params: Promise<{ id: s
           <article key={session.id} className="panel grid gap-2 p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <div className="font-mono text-2xl font-semibold">{session.code}</div>
-                <p className="text-sm text-slate-600">{session.label ?? "Untitled session"}</p>
+                <div className="font-display font-mono text-2xl font-semibold">{session.code}</div>
+                <p className="text-sm text-[var(--muted)]">{session.label ?? "Untitled session"}</p>
               </div>
-              <span className="rounded-md bg-slate-100 px-2 py-1 text-xs">{session.useCount}{session.maxUses ? ` / ${session.maxUses}` : ""} uses</span>
+              <span className="status-pill status-pill--inactive">{session.useCount}{session.maxUses ? ` / ${session.maxUses}` : ""} uses</span>
             </div>
-            <p className="text-sm text-slate-600">{appUrl}/take/{session.code}</p>
-            <p className="text-xs text-slate-500">Enabled: {test.subTests.filter((subTest) => session.enabledSubtestIds.includes(subTest.id)).map((subTest) => subTest.title).join(", ")}</p>
+            <p className="text-sm text-[var(--muted)]">{appUrl}/take?code={session.code}</p>
+            <p className="text-xs text-[var(--muted)]">Enabled: {test.subTests.filter((subTest) => (session.enabledSubtestIds as string[] ?? []).includes(subTest.id)).map((subTest) => subTest.title).join(", ")}</p>
           </article>
         ))}
       </section>

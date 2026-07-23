@@ -12,6 +12,10 @@ npm run prisma:migrate -- --name init
 npm run prisma:seed
 npm run dev
 ```
+Per-loginan
+admin@gosyen.com / password123
+corrector@gosyen.com / password123
+superadmin@gosyen.com / password123
 
 Open:
 

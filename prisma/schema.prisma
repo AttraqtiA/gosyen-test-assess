@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -121,6 +121,7 @@ model Test {
   title                  String
   description            String?
   category               TestCategory
+  candidateFields        Json?
   timeLimitMinutes       Int?
   isActive               Boolean       @default(true)
   shuffleQuestions       Boolean       @default(false)
@@ -186,7 +187,7 @@ model TestSession {
   test              Test      @relation(fields: [testId], references: [id])
   code              String    @unique
   label             String?
-  enabledSubtestIds String[]
+  enabledSubtestIds Json
   expiresAt         DateTime?
   maxUses           Int?
   useCount          Int       @default(0)
@@ -203,6 +204,7 @@ model Attempt {
   session        TestSession?    @relation(fields: [sessionId], references: [id])
   candidateName  String
   candidateEmail String
+  position       String?
   startedAt      DateTime        @default(now())
   submittedAt    DateTime?
   status         AttemptStatus   @default(IN_PROGRESS)
@@ -272,7 +274,7 @@ model CandidateProfile {
   company          Company  @relation(fields: [companyId], references: [id])
   candidateEmail   String
   label            String
-  attemptIds       String[]
+  attemptIds       Json
   compositeScore   Float?
   compositeSummary String?
   createdAt        DateTime @default(now())

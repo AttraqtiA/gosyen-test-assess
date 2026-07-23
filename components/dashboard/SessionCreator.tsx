@@ -30,18 +30,21 @@ export function SessionCreator({ testId, subTests }: { testId: string; subTests:
   }
 
   return (
-    <section className="panel grid gap-4 p-4">
-      <h2 className="font-semibold">Create session</h2>
+    <section className="panel grid gap-5 p-5">
+      <div>
+        <p className="eyebrow">Generate candidate code</p>
+        <h2 className="mt-2 text-2xl font-semibold">Create session</h2>
+      </div>
       <Input placeholder="Internal label" value={label} onChange={(event) => setLabel(event.target.value)} />
-      <div className="grid gap-2">
+      <div className="grid gap-3">
         {subTests.map((subTest) => (
-          <label key={subTest.id} className="flex items-center gap-2 text-sm">
+          <label key={subTest.id} className="surface-block flex items-center gap-3 p-3 text-sm">
             <input type="checkbox" checked={enabledSubtestIds.includes(subTest.id)} onChange={() => toggle(subTest.id)} />
             {subTest.title}
           </label>
         ))}
       </div>
-      {message && <p className="text-sm text-slate-600">{message}</p>}
+      {message && <p className="text-sm text-[var(--muted)]">{message}</p>}
       <Button type="button" onClick={createSession}>
         <Plus size={16} />
         Generate session code
