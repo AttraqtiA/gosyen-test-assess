@@ -3,11 +3,21 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { ExportButton } from "@/components/dashboard/ExportButton";
 import { requireDashboardUser, scopedCompanyId } from "@/lib/auth";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
-export default async function ResultsPage({ params }: { params: Promise<{ id: string }> }) {
+type ResultsPageProps = {
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<{ sort?: string; q?: string }>;
+};
+
+export default async function ResultsPage({ params, searchParams }: ResultsPageProps) {
   const user = await requireDashboardUser();
   const companyId = scopedCompanyId(user);
   const { id } = await params;
+  const query = (await searchParams) ?? {};
+  const sort = query.sort === "asc" ? "asc" : "desc";
+  const filter = query.q?.trim().toLowerCase() ?? "";
   const test = await prisma.test.findFirst({
     where: { id, companyId },
     include: { attempts: { include: { result: true }, orderBy: { startedAt: "desc" } } },
@@ -17,12 +27,23 @@ export default async function ResultsPage({ params }: { params: Promise<{ id: st
   }
   return (
     <main className="container-page page-stack">
-      <header className="flex flex-wrap items-center justify-between gap-3">
+      <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="eyebrow">Results workspace</p>
           <h1 className="mt-2 text-3xl font-semibold">{test.title} results</h1>
         </div>
-        <ExportButton kind="batch" testId={test.id} />
+        <div className="flex flex-wrap items-center gap-3">
+          <form className="flex flex-wrap items-center gap-3" action="">
+            <input type="hidden" name="sort" value={sort} />
+            <Input name="q" defaultValue={filter} placeholder="Filter by candidate, email, or profile" className="w-72" />
+            <select name="sort" defaultValue={sort} className="select-shell w-40">
+              <option value="desc">Newest first</option>
+              <option value="asc">Oldest first</option>
+            </select>
+            <Button type="submit" variant="secondary">Apply</Button>
+          </form>
+          <ExportButton kind="batch" testId={test.id} />
+        </div>
       </header>
       <section className="panel table-shell overflow-x-auto">
         {test.attempts.length === 0 ? (
@@ -43,7 +64,20 @@ export default async function ResultsPage({ params }: { params: Promise<{ id: st
             </tr>
           </thead>
           <tbody>
-            {test.attempts.map((attempt) => (
+            {test.attempts
+              .filter((attempt) => {
+                if (!filter) {
+                  return true;
+                }
+                const haystack = [attempt.candidateName, attempt.candidateEmail, attempt.result?.profileLabel ?? ""].join(" ").toLowerCase();
+                return haystack.includes(filter);
+              })
+              .sort((left, right) => {
+                const leftTime = left.submittedAt?.getTime() ?? left.startedAt.getTime();
+                const rightTime = right.submittedAt?.getTime() ?? right.startedAt.getTime();
+                return sort === "asc" ? leftTime - rightTime : rightTime - leftTime;
+              })
+              .map((attempt) => (
               <tr key={attempt.id} className="border-b">
                 <td className="p-3">{attempt.candidateName}</td>
                 <td className="p-3">{attempt.candidateEmail}</td>

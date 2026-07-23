@@ -88,6 +88,7 @@ textarea::placeholder {
 
 .app-shell {
   min-height: 100vh;
+  padding-top: 92px;
 }
 
 .container-page {
@@ -100,6 +101,12 @@ textarea::placeholder {
   top: 0;
   z-index: 30;
   padding: 16px 0 0;
+}
+
+.topbar-brandless {
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 700;
 }
 
 .topbar {

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { randomUUID } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { startAttemptSchema } from "@/lib/validation";
 
@@ -27,8 +28,8 @@ export async function POST(request: Request) {
     data: {
       testId: session.testId,
       sessionId: session.id,
-      candidateName: payload.data.candidateName,
-      candidateEmail: payload.data.candidateEmail,
+      candidateName: payload.data.candidateName?.trim() || `Anonymous ${session.code}`,
+      candidateEmail: payload.data.candidateEmail?.trim() || `${session.code.toLowerCase()}-${randomUUID().slice(0, 8)}@local.gosyen`,
     },
   });
 
@@ -43,6 +44,7 @@ export async function POST(request: Request) {
       description: session.test.description,
       timeLimitMinutes: session.test.timeLimitMinutes,
       showResultsToCandidate: session.test.showResultsToCandidate,
+      candidateFields: session.test.candidateFields,
       subTests: enabledSubtests,
     },
   });

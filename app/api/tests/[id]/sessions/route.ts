@@ -16,9 +16,11 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   const companyId = scopedCompanyId(user);
   const { id } = await context.params;
   const payload = payloadSchema.safeParse(await request.json());
+
   if (!payload.success) {
     return NextResponse.json({ error: "Invalid session payload." }, { status: 400 });
   }
+
   const test = await prisma.test.findFirst({ where: { id, companyId }, select: { id: true } });
   if (!test) {
     return NextResponse.json({ error: "Test not found." }, { status: 404 });
@@ -43,5 +45,6 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       enabledSubtestIds: payload.data.enabledSubtestIds,
     },
   });
+
   return NextResponse.json(session);
 }

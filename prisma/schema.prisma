@@ -121,6 +121,7 @@ model Test {
   title                  String
   description            String?
   category               TestCategory
+  candidateFields        Json?
   timeLimitMinutes       Int?
   isActive               Boolean       @default(true)
   shuffleQuestions       Boolean       @default(false)

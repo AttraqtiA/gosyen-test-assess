@@ -1,3 +1,5 @@
+import { PasswordField } from "@/components/auth/PasswordField";
+
 export default function LoginPage() {
   return (
     <main className="container-page page-stack">
@@ -26,15 +28,10 @@ export default function LoginPage() {
                 type="email"
                 autoComplete="email"
               />
-            </label>
+              </label>
               <label className="grid gap-2 text-sm font-medium text-[var(--foreground)]">
               Password
-              <input
-                className="input-shell"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-              />
+              <PasswordField />
             </label>
             </form>
             <a href="/dashboard" className="button-primary">

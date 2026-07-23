@@ -32,8 +32,6 @@ function TakePageContent() {
   const params = useSearchParams();
   const router = useRouter();
   const [code, setCode] = useState(params.get("code") ?? "");
-  const [candidateName, setCandidateName] = useState("");
-  const [candidateEmail, setCandidateEmail] = useState("");
   const [test, setTest] = useState<ActiveTest | null>(null);
   const [error, setError] = useState<string | null>(null);
   const store = useTestStore();
@@ -46,7 +44,7 @@ function TakePageContent() {
     const response = await fetch("/api/attempts/start", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ code, candidateName, candidateEmail }),
+      body: JSON.stringify({ code }),
     });
     const data = (await response.json()) as { attemptId?: string; test?: ActiveTest; error?: string };
     if (!response.ok || !data.attemptId || !data.test) {
@@ -103,16 +101,14 @@ function TakePageContent() {
       <main className="container-page page-stack">
         <section className="hero-panel">
           <div className="hero-content lg:grid-cols-[1fr_420px] lg:items-center">
-            <div className="hero-copy">
-              <p className="eyebrow">Join with a code</p>
-              <h1 className="hero-title">Enter your exam code and begin the assessment flow.</h1>
-              <p className="hero-body">This join screen is tuned for the Kahoot-style pattern you described: admin creates the exam, generates a code, and the assessee enters that code here.</p>
+          <div className="hero-copy">
+              <p className="eyebrow">Masuk dengan kode</p>
+              <h1 className="hero-title">Masukkan kode ujian dan mulai sesi.</h1>
+              <p className="hero-body">Halaman masuk ini hanya meminta kode sesi. Nama, email, posisi, dan detail lain dapat ditambahkan admin pada tahap berikutnya.</p>
             </div>
             <div className="panel grid gap-4 p-6">
               <h2 className="text-2xl font-semibold">Start assessment</h2>
           <Input placeholder="Session code" value={code} onChange={(event) => setCode(event.target.value.toUpperCase())} />
-          <Input placeholder="Full name" value={candidateName} onChange={(event) => setCandidateName(event.target.value)} />
-          <Input placeholder="Email" type="email" value={candidateEmail} onChange={(event) => setCandidateEmail(event.target.value)} />
           {error && <p className="text-sm text-red-600">{error}</p>}
           <Button onClick={start}>Begin</Button>
             </div>
