@@ -88,6 +88,9 @@ textarea::placeholder {
 
 .app-shell {
   min-height: 100vh;
+}
+
+.app-shell:has(.topbar-shell) {
   padding-top: 92px;
 }
 

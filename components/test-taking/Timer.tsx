@@ -18,7 +18,7 @@ export function Timer({ seconds, onExpire }: { seconds: number | null; onExpire:
   }, [onExpire, remaining]);
 
   if (remaining === null) {
-    return <span className="text-sm text-slate-500">No global timer</span>;
+    return <span className="text-sm text-[var(--muted)]">No global timer</span>;
   }
   const minutes = Math.floor(remaining / 60);
   const secs = String(remaining % 60).padStart(2, "0");

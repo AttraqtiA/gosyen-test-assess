@@ -25,8 +25,8 @@ export function QuestionCard({ question, value, onChange }: Props) {
   return (
     <section className="panel grid gap-5 p-5">
       <div>
-        <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">{question.type.replace("_", " ")}</div>
-        <h2 className="text-lg font-semibold text-slate-950">{question.body}</h2>
+        <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">{question.type.replace("_", " ")}</div>
+        <h2 className="text-lg font-semibold text-[var(--foreground)]">{question.body}</h2>
       </div>
       {question.type === "MCQ" && <MCQQuestion questionId={question.id} options={question.options} value={value} onChange={onChange} />}
       {question.type === "SCALE" && <ScaleQuestion options={question.options} value={value} onChange={onChange} />}

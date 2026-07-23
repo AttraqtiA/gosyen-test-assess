@@ -15,7 +15,7 @@ export function MCQQuestion({ questionId, options, value, onChange }: Props) {
   return (
     <div className="grid gap-2">
       {items.map((item) => (
-        <label key={item.id} className="flex cursor-pointer items-center gap-3 rounded-md border border-slate-200 bg-white p-3 text-sm">
+        <label key={item.id} className="flex cursor-pointer items-center gap-3 rounded-md border border-[var(--border)] bg-[var(--surface-soft)] p-3 text-sm">
           <input type="radio" name={questionId} checked={value === item.id} onChange={() => onChange(item.id)} />
           <span>{item.label}</span>
         </label>

@@ -191,8 +191,8 @@ function TakePageContent() {
                 </>
               ) : (
                 <>
-                  <div className="text-sm text-slate-600 mb-2">
-                    <span className="font-semibold text-slate-800">Ujian:</span> {testInfo?.testTitle}
+                  <div className="text-sm text-[var(--muted)] mb-2">
+                    <span className="font-semibold text-[var(--foreground)]">Ujian:</span> {testInfo?.testTitle}
                   </div>
                   <Input 
                     placeholder="Nama Lengkap" 
@@ -208,11 +208,11 @@ function TakePageContent() {
                   
                   {testInfo?.positions && testInfo.positions.length > 0 && (
                     <div className="grid gap-1">
-                      <label className="text-xs font-semibold text-slate-600">Posisi yang Dilamar</label>
+                      <label className="text-xs font-semibold text-[var(--muted)]">Posisi yang Dilamar</label>
                       <select 
                         value={selectedPosition} 
                         onChange={(e) => setSelectedPosition(e.target.value)}
-                        className="h-10 rounded-md border border-slate-300 px-3 text-sm bg-white"
+                        className="select-shell h-10 text-sm"
                       >
                         {testInfo.positions.map((pos) => (
                           <option key={pos} value={pos}>{pos}</option>
@@ -242,9 +242,16 @@ function TakePageContent() {
   if (store.isSubmitted) {
     return (
       <main className="container-page grid min-h-screen content-center py-10">
-        <section className="panel mx-auto max-w-xl p-6 text-center">
-          <h1 className="text-2xl font-semibold">Submission received</h1>
-          <p className="mt-2 text-sm text-slate-600">Your responses have been saved.</p>
+        <section className="panel mx-auto max-w-xl p-8 text-center grid gap-4 bg-[var(--surface)] border border-[var(--border)] rounded-xl">
+          <div>
+            <h1 className="text-2xl font-bold text-[var(--foreground)]">Submission received</h1>
+            <p className="mt-2 text-sm text-[var(--muted)]">Your responses have been saved.</p>
+          </div>
+          <div className="flex justify-center mt-2">
+            <Button onClick={() => { window.location.href = "/take"; }} className="bg-[var(--primary)] hover:bg-[var(--primary-dark)] text-white">
+              Kembali ke Beranda
+            </Button>
+          </div>
         </section>
       </main>
     );

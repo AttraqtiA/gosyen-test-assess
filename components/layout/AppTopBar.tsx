@@ -54,6 +54,9 @@ function navForPath(pathname: string): NavItem[] {
 
 export function AppTopBar() {
   const pathname = usePathname();
+  if (pathname.startsWith("/take") || pathname.startsWith("/results")) {
+    return null;
+  }
   const navItems = navForPath(pathname);
   const isDashboard = pathname.startsWith("/dashboard");
   const [locale, setLocale] = useState<Locale>("id");

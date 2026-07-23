@@ -17,7 +17,7 @@ export function ScaleQuestion({ options, value, onChange }: Props) {
   const values = Array.from({ length: parsed.data.max - parsed.data.min + 1 }, (_, index) => parsed.data.min + index);
   return (
     <div className="grid gap-3">
-      <div className="flex items-center justify-between text-xs text-slate-500">
+      <div className="flex items-center justify-between text-xs text-[var(--muted)]">
         <span>{parsed.data.minLabel}</span>
         <span>{parsed.data.maxLabel}</span>
       </div>

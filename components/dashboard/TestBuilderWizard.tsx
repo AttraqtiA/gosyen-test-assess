@@ -280,7 +280,7 @@ export function TestBuilderWizard() {
   }
 
   if (loading) {
-    return <main className="container-page py-20 text-center text-slate-600">Loading test structure...</main>;
+    return <main className="container-page py-20 text-center text-[var(--muted)]">Loading test structure...</main>;
   }
 
   return (
@@ -288,8 +288,8 @@ export function TestBuilderWizard() {
       {/* Wizard Sidebar */}
       <aside className="panel h-fit p-4 flex flex-col gap-4">
         <div>
-          <h2 className="font-semibold text-slate-800">Edit Assessment</h2>
-          <p className="text-xs text-slate-500 mt-1">{title || "Untitled Test"}</p>
+          <h2 className="font-semibold text-[var(--foreground)]">Edit Assessment</h2>
+          <p className="text-xs text-[var(--muted)] mt-1">{title || "Untitled Test"}</p>
         </div>
         <nav className="grid gap-1 text-sm">
           {steps.map((item, index) => (
@@ -299,17 +299,17 @@ export function TestBuilderWizard() {
               onClick={() => setStep(index)}
               className={`rounded-md px-3 py-2 text-left transition-colors flex items-center justify-between ${
                 index === step
-                  ? "bg-slate-100 font-medium text-slate-900 border-l-4 border-slate-800"
-                  : "text-slate-600 hover:bg-slate-50"
+                  ? "bg-[var(--surface-soft)] font-medium text-[var(--foreground)] border-l-4 border-[var(--primary)]"
+                  : "text-[var(--muted)] hover:bg-[var(--surface-soft)]"
               }`}
             >
               <span>{index + 1}. {item}</span>
-              {index < step && <Check size={14} className="text-green-600" />}
+              {index < step && <Check size={14} className="text-[var(--success)]" />}
             </button>
           ))}
         </nav>
         {testId && (
-          <div className="border-t border-slate-100 pt-3">
+          <div className="border-t border-[var(--border)] pt-3">
             <Button
               className="w-full flex items-center justify-center gap-2"
               variant="secondary"
@@ -324,16 +324,16 @@ export function TestBuilderWizard() {
       </aside>
 
       {/* Editor Content Area */}
-      <section className="panel grid gap-5 p-6 bg-white shadow-sm border border-slate-100 rounded-lg">
-        <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-          <h1 className="text-2xl font-bold text-slate-800">{steps[step]}</h1>
-          <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700">
+      <section className="panel grid gap-5 p-6 shadow-sm border border-[var(--border)] rounded-lg">
+        <div className="flex justify-between items-center border-b border-[var(--border)] pb-3">
+          <h1 className="text-2xl font-bold text-[var(--foreground)]">{steps[step]}</h1>
+          <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[var(--surface-soft)] text-[var(--foreground)]">
             Step {step + 1} of {steps.length}
           </span>
         </div>
 
         {error && (
-          <div className="p-3 bg-red-50 text-red-700 rounded-md text-sm border border-red-200">
+          <div className="p-3 bg-[var(--danger)]/15 text-[var(--danger)] rounded-md text-sm border border-[var(--danger)]/30">
             {error}
           </div>
         )}
@@ -342,7 +342,7 @@ export function TestBuilderWizard() {
         {step === 0 && (
           <div className="grid gap-4 max-w-2xl">
             <div className="grid gap-1.5">
-              <label className="text-sm font-semibold text-slate-700">Judul Ujian</label>
+              <label className="text-sm font-semibold text-[var(--foreground)]">Judul Ujian</label>
               <Input
                 placeholder="Contoh: IST & Studi Kasus"
                 value={title}
@@ -350,7 +350,7 @@ export function TestBuilderWizard() {
               />
             </div>
             <div className="grid gap-1.5">
-              <label className="text-sm font-semibold text-slate-700">Deskripsi Ujian</label>
+              <label className="text-sm font-semibold text-[var(--foreground)]">Deskripsi Ujian</label>
               <Textarea
                 placeholder="Jelaskan instruksi ujian secara garis besar..."
                 value={description}
@@ -360,11 +360,11 @@ export function TestBuilderWizard() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-1.5">
-                <label className="text-sm font-semibold text-slate-700">Kategori Tes</label>
+                <label className="text-sm font-semibold text-[var(--foreground)]">Kategori Tes</label>
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value as any)}
-                  className="h-10 rounded-md border border-slate-300 px-3 text-sm bg-white"
+                  className="select-shell h-10 text-sm"
                 >
                   <option value="COMPOSITE">COMPOSITE (IST / Multi-SubTest)</option>
                   <option value="INTERVIEW">INTERVIEW (Essay Only)</option>
@@ -374,7 +374,7 @@ export function TestBuilderWizard() {
                 </select>
               </div>
               <div className="grid gap-1.5">
-                <label className="text-sm font-semibold text-slate-700">Batas Waktu Global (Menit)</label>
+                <label className="text-sm font-semibold text-[var(--foreground)]">Batas Waktu Global (Menit)</label>
                 <Input
                   type="number"
                   placeholder="Kosongkan jika menggunakan batas waktu per sub-tes"
@@ -383,31 +383,31 @@ export function TestBuilderWizard() {
                 />
               </div>
             </div>
-            <div className="border-t border-slate-100 pt-4 flex flex-col gap-3">
-              <label className="flex items-center gap-3 text-sm text-slate-700">
+            <div className="border-t border-[var(--border)] pt-4 flex flex-col gap-3">
+              <label className="flex items-center gap-3 text-sm text-[var(--foreground)]">
                 <input
                   type="checkbox"
                   checked={isActive}
                   onChange={(e) => setIsActive(e.target.checked)}
-                  className="h-4 w-4 rounded border-slate-300 text-slate-800 focus:ring-slate-800"
+                  className="h-4 w-4 rounded border-[var(--border)] text-[var(--primary)] focus:ring-[var(--primary)]"
                 />
                 Ujian Aktif (Kandidat dapat memulai pengerjaan jika memiliki kode)
               </label>
-              <label className="flex items-center gap-3 text-sm text-slate-700">
+              <label className="flex items-center gap-3 text-sm text-[var(--foreground)]">
                 <input
                   type="checkbox"
                   checked={shuffleQuestions}
                   onChange={(e) => setShuffleQuestions(e.target.checked)}
-                  className="h-4 w-4 rounded border-slate-300 text-slate-800 focus:ring-slate-800"
+                  className="h-4 w-4 rounded border-[var(--border)] text-[var(--primary)] focus:ring-[var(--primary)]"
                 />
                 Acak Urutan Soal saat Ujian dimulai
               </label>
-              <label className="flex items-center gap-3 text-sm text-slate-700">
+              <label className="flex items-center gap-3 text-sm text-[var(--foreground)]">
                 <input
                   type="checkbox"
                   checked={showResultsToCandidate}
                   onChange={(e) => setShowResultsToCandidate(e.target.checked)}
-                  className="h-4 w-4 rounded border-slate-300 text-slate-800 focus:ring-slate-800"
+                  className="h-4 w-4 rounded border-[var(--border)] text-[var(--primary)] focus:ring-[var(--primary)]"
                 />
                 Tampilkan hasil nilai/profile ke kandidat setelah submit
               </label>
@@ -419,7 +419,7 @@ export function TestBuilderWizard() {
         {step === 1 && (
           <div className="grid gap-4">
             <div className="flex justify-between items-center">
-              <p className="text-sm text-slate-600">Daftar bagian/sub-tes di dalam ujian ini. Urutan akan menentukan alur pengerjaan.</p>
+              <p className="text-sm text-[var(--muted)]">Daftar bagian/sub-tes di dalam ujian ini. Urutan akan menentukan alur pengerjaan.</p>
               <Button type="button" onClick={addSubTest} className="flex items-center gap-1.5">
                 <Plus size={16} /> Add SubTest
               </Button>
@@ -427,12 +427,12 @@ export function TestBuilderWizard() {
 
             <div className="grid gap-3">
               {subTests.map((sub, idx) => (
-                <article key={idx} className="p-4 border border-slate-200 rounded-md bg-slate-50 flex flex-col gap-3">
+                <article key={idx} className="p-4 border border-[var(--border)] rounded-md bg-[var(--surface-soft)] flex flex-col gap-3">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold text-slate-800">#{idx + 1}</span>
+                      <span className="font-semibold text-[var(--foreground)]">#{idx + 1}</span>
                       <Input
-                        className="font-semibold h-8 w-64 bg-white"
+                        className="font-semibold h-8 w-64"
                         value={sub.title}
                         onChange={(e) => {
                           const updated = [...subTests];
@@ -448,7 +448,7 @@ export function TestBuilderWizard() {
                       <Button variant="ghost" className="h-8 w-8 p-0" onClick={() => moveSubTest(idx, "down")} disabled={idx === subTests.length - 1}>
                         <ArrowDown size={16} />
                       </Button>
-                      <Button variant="ghost" className="h-8 w-8 p-0 text-red-600 hover:bg-red-50" onClick={() => removeSubTest(idx)}>
+                      <Button variant="ghost" className="h-8 w-8 p-0 text-[var(--danger)] hover:bg-[var(--danger)]/10" onClick={() => removeSubTest(idx)}>
                         <Trash2 size={16} />
                       </Button>
                     </div>
@@ -462,7 +462,6 @@ export function TestBuilderWizard() {
                         updated[idx]!.description = e.target.value;
                         setSubTests(updated);
                       }}
-                      className="bg-white"
                     />
                     <div className="flex items-center gap-2">
                       <Input
@@ -474,15 +473,15 @@ export function TestBuilderWizard() {
                           updated[idx]!.timeLimitSecs = e.target.value ? Number(e.target.value) : null;
                           setSubTests(updated);
                         }}
-                        className="bg-white text-right"
+                        className="text-right"
                       />
-                      <span className="text-xs text-slate-500">detik</span>
+                      <span className="text-xs text-[var(--muted)]">detik</span>
                     </div>
                   </div>
                 </article>
               ))}
               {subTests.length === 0 && (
-                <div className="p-10 border border-dashed border-slate-300 rounded-md text-center text-slate-500 text-sm">
+                <div className="p-10 border border-dashed border-[var(--border)] rounded-md text-center text-[var(--muted)] text-sm">
                   Belum ada bagian sub-tes. Klik "Add SubTest" untuk membuat.
                 </div>
               )}
@@ -494,18 +493,18 @@ export function TestBuilderWizard() {
         {step === 2 && (
           <div className="grid gap-5">
             {subTests.length === 0 ? (
-              <div className="p-10 text-center text-slate-500 text-sm border rounded-md">
+              <div className="p-10 text-center text-[var(--muted)] text-sm border border-[var(--border)] rounded-md">
                 Harap buat SubTest terlebih dahulu di bagian Structure.
               </div>
             ) : (
               <>
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] pb-3">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-slate-700">Pilih SubTest:</span>
+                    <span className="text-sm font-semibold text-[var(--foreground)]">Pilih SubTest:</span>
                     <select
                       value={activeSubTestIndex}
                       onChange={(e) => setActiveSubTestIndex(Number(e.target.value))}
-                      className="h-9 rounded-md border border-slate-300 px-3 text-sm bg-white"
+                      className="select-shell h-9 text-sm w-72"
                     >
                       {subTests.map((sub, idx) => (
                         <option key={idx} value={idx}>
@@ -521,10 +520,10 @@ export function TestBuilderWizard() {
 
                 <div className="grid gap-4">
                   {subTests[activeSubTestIndex]?.questions.map((q, idx) => (
-                    <article key={idx} className="p-4 border border-slate-200 rounded-md bg-white flex flex-col gap-3 shadow-xs">
+                    <article key={idx} className="p-4 border border-[var(--border)] rounded-md bg-[var(--surface-soft)] flex flex-col gap-3 shadow-xs">
                       <div className="flex justify-between items-start gap-4">
                         <div className="flex-1">
-                          <span className="text-xs font-semibold text-slate-500 block mb-1">SOAL #{idx + 1}</span>
+                          <span className="text-xs font-semibold text-[var(--muted)] block mb-1">SOAL #{idx + 1}</span>
                           <Textarea
                             placeholder="Tuliskan pertanyaan disini..."
                             value={q.body}
@@ -533,11 +532,11 @@ export function TestBuilderWizard() {
                           />
                         </div>
                         <div className="flex flex-col gap-2 w-48">
-                          <label className="text-xs font-semibold text-slate-600">Tipe Soal</label>
+                          <label className="text-xs font-semibold text-[var(--muted)]">Tipe Soal</label>
                           <select
                             value={q.type}
                             onChange={(e) => updateQuestion(idx, "type", e.target.value)}
-                            className="h-8 rounded-md border border-slate-300 px-2 text-xs bg-white"
+                            className="select-shell h-8 text-xs"
                           >
                             <option value="MCQ">Pilihan Ganda (MCQ)</option>
                             <option value="ESSAY">Essay / Studi Kasus</option>
@@ -547,7 +546,7 @@ export function TestBuilderWizard() {
                           </select>
                           <Button
                             variant="ghost"
-                            className="text-red-600 hover:bg-red-50 mt-1 h-8 justify-start gap-1.5 p-2 text-xs"
+                            className="text-[var(--danger)] hover:bg-[var(--danger)]/10 mt-1 h-8 justify-start gap-1.5 p-2 text-xs"
                             onClick={() => removeQuestionFromActiveSub(idx)}
                           >
                             <Trash2 size={14} /> Hapus Soal
@@ -557,12 +556,12 @@ export function TestBuilderWizard() {
 
                       {/* Tipe MCQ: Pilihan Jawaban */}
                       {q.type === "MCQ" && (
-                        <div className="pl-4 border-l-2 border-slate-200 grid gap-2">
-                          <label className="text-xs font-semibold text-slate-600 block">Pilihan Jawaban (Opsi):</label>
+                        <div className="pl-4 border-l-2 border-[var(--border)] grid gap-2">
+                          <label className="text-xs font-semibold text-[var(--muted)] block">Pilihan Jawaban (Opsi):</label>
                           {Array.isArray(q.options) &&
                             q.options.map((opt: Option, oIdx: number) => (
                               <div key={opt.id} className="flex items-center gap-2">
-                                <span className="font-mono text-xs font-semibold">{opt.id}</span>
+                                <span className="font-mono text-xs font-semibold text-[var(--foreground)]">{opt.id}</span>
                                 <Input
                                   value={opt.label}
                                   onChange={(e) => {
@@ -570,16 +569,16 @@ export function TestBuilderWizard() {
                                     updatedOpts[oIdx]!.label = e.target.value;
                                     updateQuestion(idx, "options", updatedOpts);
                                   }}
-                                  className="h-8 text-xs bg-slate-50"
+                                  className="h-8 text-xs"
                                 />
                                 <input
                                   type="radio"
                                   name={`correct-radio-${idx}`}
                                   checked={q.correctAnswer === opt.id}
                                   onChange={() => updateQuestion(idx, "correctAnswer", opt.id)}
-                                  className="h-4 w-4 border-slate-300 text-slate-800"
+                                  className="h-4 w-4 border-[var(--border)] text-[var(--primary)] focus:ring-[var(--primary)]"
                                 />
-                                <span className="text-[10px] text-slate-500">Kunci</span>
+                                <span className="text-[10px] text-[var(--muted)]">Kunci</span>
                               </div>
                             ))}
                         </div>
@@ -588,7 +587,7 @@ export function TestBuilderWizard() {
                       {/* Tipe Essay/Open: Rubric/Scoring Hint */}
                       {(q.type === "ESSAY" || q.type === "OPEN") && (
                         <div className="grid gap-1">
-                          <label className="text-xs font-semibold text-slate-600">Panduan Penilaian / Rubrik (Scoring Hint):</label>
+                          <label className="text-xs font-semibold text-[var(--muted)]">Panduan Penilaian / Rubrik (Scoring Hint):</label>
                           <Input
                             placeholder="Contoh: Nilai 0-100 berdasarkan kesesuaian solusi..."
                             value={q.scoringHint ?? ""}
@@ -601,11 +600,11 @@ export function TestBuilderWizard() {
                       {/* Tipe True/False */}
                       {q.type === "TRUE_FALSE" && (
                         <div className="flex items-center gap-2">
-                          <label className="text-xs font-semibold text-slate-600">Jawaban Benar:</label>
+                          <label className="text-xs font-semibold text-[var(--muted)]">Jawaban Benar:</label>
                           <select
                             value={q.correctAnswer ?? "TRUE"}
                             onChange={(e) => updateQuestion(idx, "correctAnswer", e.target.value)}
-                            className="h-8 rounded-md border border-slate-300 px-2 text-xs bg-white"
+                            className="select-shell h-8 text-xs w-32"
                           >
                             <option value="TRUE">BENAR (TRUE)</option>
                             <option value="FALSE">SALAH (FALSE)</option>
@@ -613,9 +612,9 @@ export function TestBuilderWizard() {
                         </div>
                       )}
 
-                      <div className="flex gap-4 border-t border-slate-50 pt-2 text-xs">
+                      <div className="flex gap-4 border-t border-[var(--border)] pt-2 text-xs">
                         <div className="flex items-center gap-1.5">
-                          <span className="text-slate-500 font-medium">Bobot Soal:</span>
+                          <span className="text-[var(--muted)] font-medium">Bobot Soal:</span>
                           <Input
                             type="number"
                             value={q.weight}
@@ -624,7 +623,7 @@ export function TestBuilderWizard() {
                           />
                         </div>
                         <div className="flex items-center gap-1.5">
-                          <span className="text-slate-500 font-medium">Dimensi / Tag:</span>
+                          <span className="text-[var(--muted)] font-medium">Dimensi / Tag:</span>
                           <Input
                             placeholder="Contoh: SE1"
                             value={q.dimension ?? ""}
@@ -636,7 +635,7 @@ export function TestBuilderWizard() {
                     </article>
                   ))}
                   {(!subTests[activeSubTestIndex]?.questions || subTests[activeSubTestIndex]?.questions.length === 0) && (
-                    <div className="p-10 border border-dashed border-slate-300 rounded-md text-center text-slate-500 text-sm">
+                    <div className="p-10 border border-dashed border-[var(--border)] rounded-md text-center text-[var(--muted)] text-sm">
                       Belum ada pertanyaan pada sub-tes ini. Klik "Tambah Soal" untuk membuat.
                     </div>
                   )}
@@ -650,14 +649,14 @@ export function TestBuilderWizard() {
         {step === 3 && (
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="grid gap-4">
-              <h3 className="text-md font-semibold text-slate-800 flex items-center gap-1">
+              <h3 className="text-md font-semibold text-[var(--foreground)] flex items-center gap-1">
                 <Settings2 size={16} /> Metode Scoring Per SubTest
               </h3>
               {subTests.map((sub, idx) => (
-                <div key={idx} className="p-3 border border-slate-100 rounded-md bg-slate-50 flex flex-col gap-2">
-                  <div className="font-semibold text-sm text-slate-700">{sub.title}</div>
+                <div key={idx} className="p-3 border border-[var(--border)] rounded-md bg-[var(--surface-soft)] flex flex-col gap-2">
+                  <div className="font-semibold text-sm text-[var(--foreground)]">{sub.title}</div>
                   <div className="grid grid-cols-[150px_1fr] gap-2 items-center">
-                    <label className="text-xs text-slate-500 font-medium">Strategi Nilai:</label>
+                    <label className="text-xs text-[var(--muted)] font-medium">Strategi Nilai:</label>
                     <select
                       value={sub.scoringConfig?.strategy ?? "correct_count"}
                       onChange={(e) => {
@@ -668,7 +667,7 @@ export function TestBuilderWizard() {
                         };
                         setSubTests(updated);
                       }}
-                      className="h-8 rounded-md border border-slate-300 px-2 text-xs bg-white"
+                      className="select-shell h-8 text-xs"
                     >
                       <option value="correct_count">Jumlah Benar (correct_count)</option>
                       <option value="weighted_sum">Total Bobot Nilai (weighted_sum)</option>
@@ -680,13 +679,13 @@ export function TestBuilderWizard() {
               ))}
             </div>
 
-            <div className="grid gap-4 h-fit p-4 border border-slate-200 rounded-md bg-slate-50/50">
-              <h3 className="text-md font-semibold text-slate-800 flex items-center gap-1">
+            <div className="grid gap-4 h-fit p-4 border border-[var(--border)] rounded-md bg-[var(--surface-soft)]">
+              <h3 className="text-md font-semibold text-[var(--foreground)] flex items-center gap-1">
                 <LayoutGrid size={16} /> Rumus Nilai Gabungan (Composite)
               </h3>
-              <p className="text-xs text-slate-500">Gunakan penjumlahan judul sub-tes sebagai variabel untuk menghitung total nilai gabungan.</p>
+              <p className="text-xs text-[var(--muted)]">Gunakan penjumlahan judul sub-tes sebagai variabel untuk menghitung total nilai gabungan.</p>
               <div className="grid gap-1.5">
-                <label className="text-xs font-semibold text-slate-700">Formula Nilai Total</label>
+                <label className="text-xs font-semibold text-[var(--foreground)]">Formula Nilai Total</label>
                 <Input
                   placeholder="Contoh: SE1 + SE2 + SE3 + SE5 + SE6"
                   value={compositeFormula}
@@ -700,27 +699,27 @@ export function TestBuilderWizard() {
         {/* STEP 5: REVIEW & SAVE */}
         {step === 4 && (
           <div className="grid gap-5">
-            <div className="p-4 bg-slate-50 border border-slate-200 rounded-md">
-              <h3 className="font-bold text-slate-800 text-lg mb-2">Rangkuman Konfigurasi Ujian</h3>
-              <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-sm text-slate-600">
-                <div><span className="font-medium text-slate-700">Nama Ujian:</span> {title || "-"}</div>
-                <div><span className="font-medium text-slate-700">Kategori:</span> {category}</div>
-                <div><span className="font-medium text-slate-700">Total SubTest:</span> {subTests.length}</div>
-                <div><span className="font-medium text-slate-700">Batas Waktu:</span> {timeLimitMinutes ? `${timeLimitMinutes} menit` : "Ditentukan per sub-tes"}</div>
-                <div><span className="font-medium text-slate-700">Acak Soal:</span> {shuffleQuestions ? "Ya" : "Tidak"}</div>
-                <div><span className="font-medium text-slate-700">Rumus Gabungan:</span> <code className="bg-slate-200 px-1 rounded font-mono">{compositeFormula || "-"}</code></div>
+            <div className="p-4 bg-[var(--surface-soft)] border border-[var(--border)] rounded-md">
+              <h3 className="font-bold text-[var(--foreground)] text-lg mb-2">Rangkuman Konfigurasi Ujian</h3>
+              <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-sm text-[var(--muted)]">
+                <div><span className="font-medium text-[var(--foreground)]">Nama Ujian:</span> {title || "-"}</div>
+                <div><span className="font-medium text-[var(--foreground)]">Kategori:</span> {category}</div>
+                <div><span className="font-medium text-[var(--foreground)]">Total SubTest:</span> {subTests.length}</div>
+                <div><span className="font-medium text-[var(--foreground)]">Batas Waktu:</span> {timeLimitMinutes ? `${timeLimitMinutes} menit` : "Ditentukan per sub-tes"}</div>
+                <div><span className="font-medium text-[var(--foreground)]">Acak Soal:</span> {shuffleQuestions ? "Ya" : "Tidak"}</div>
+                <div><span className="font-medium text-[var(--foreground)]">Rumus Gabungan:</span> <code className="bg-[var(--surface-soft)] border border-[var(--border)] px-1 rounded font-mono">{compositeFormula || "-"}</code></div>
               </div>
             </div>
 
             <div className="grid gap-3">
-              <h4 className="font-semibold text-slate-700">Struktur SubTest & Jumlah Soal:</h4>
+              <h4 className="font-semibold text-[var(--foreground)]">Struktur SubTest & Jumlah Soal:</h4>
               {subTests.map((sub, idx) => (
-                <div key={idx} className="flex justify-between items-center p-2.5 border-b border-slate-100 text-sm">
+                <div key={idx} className="flex justify-between items-center p-2.5 border-b border-[var(--border)] text-sm">
                   <div>
-                    <span className="font-semibold text-slate-800">#{idx + 1} - {sub.title}</span>
-                    <span className="text-xs text-slate-500 block">{sub.description || "Tidak ada deskripsi"}</span>
+                    <span className="font-semibold text-[var(--foreground)]">#{idx + 1} - {sub.title}</span>
+                    <span className="text-xs text-[var(--muted)] block">{sub.description || "Tidak ada deskripsi"}</span>
                   </div>
-                  <div className="flex gap-4 text-xs text-slate-500">
+                  <div className="flex gap-4 text-xs text-[var(--muted)]">
                     <span>{sub.questions.length} Soal</span>
                     <span>{sub.timeLimitSecs ? `${sub.timeLimitSecs} detik` : "Tanpa waktu"}</span>
                   </div>
@@ -728,10 +727,10 @@ export function TestBuilderWizard() {
               ))}
             </div>
 
-            <div className="border-t border-slate-100 pt-4 flex justify-end">
+            <div className="border-t border-[var(--border)] pt-4 flex justify-end">
               <Button
                 type="button"
-                className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white"
+                className="flex items-center gap-2 bg-[var(--primary)] hover:bg-[var(--primary-dark)] text-white"
                 disabled={saving || !title}
                 onClick={handleSave}
               >
@@ -743,7 +742,7 @@ export function TestBuilderWizard() {
         )}
 
         {/* Navigation Buttons */}
-        <div className="flex justify-between border-t border-slate-100 pt-4 mt-4">
+        <div className="flex justify-between border-t border-[var(--border)] pt-4 mt-4">
           <Button
             type="button"
             variant="secondary"
