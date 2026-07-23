@@ -17,15 +17,6 @@ type SeededTest = Test & {
   sessions: TestSession[];
 };
 
-function buildScaleAnswers(questions: SeededQuestion[], favoriteDimension: string) {
-  return Object.fromEntries(
-    questions.map((question) => {
-      const value = question.dimension === favoriteDimension ? "5" : question.dimension === "S" ? "3" : "2";
-      return [question.id, value];
-    }),
-  );
-}
-
 function buildMcqAnswers(questions: SeededQuestion[], accuracy: number) {
   return Object.fromEntries(
     questions.map((question, index) => {
@@ -36,29 +27,46 @@ function buildMcqAnswers(questions: SeededQuestion[], accuracy: number) {
   );
 }
 
-function buildEssayScores(questions: SeededQuestion[], scores: number[]) {
-  return Object.fromEntries(
-    questions.map((question, index) => [
-      question.id,
-      {
-        answer: `Candidate response for ${question.body.toLowerCase()} with practical examples and outcomes.`,
-        llmScore: scores[index] ?? 70,
-      },
-    ]),
-  );
-}
-
 async function createScoredAttempt(
-  test: SeededTest,
+  test: Omit<SeededTest, "sessions">,
   session: TestSession,
   candidateName: string,
   candidateEmail: string,
-  answerFactory: (questions: SeededQuestion[]) => Record<string, string | { answer: string; llmScore?: number; manualScore?: number }>,
+  position: string,
+  accuracy: number,
+  essayAnswers: Record<string, string>,
   status: AttemptStatus = AttemptStatus.REVIEWED,
 ) {
-  const enabledSubtests = test.subTests.filter((subTest) => session.enabledSubtestIds.includes(subTest.id));
-  const questions = enabledSubtests.flatMap((subTest) => subTest.questions.map((question) => ({ ...question, subTest })));
-  const rawAnswers = answerFactory(questions);
+  // Filter subtests based on general IST + matching case study
+  const enabledSubtests = test.subTests.filter((subTest) => {
+    // Keep generic IST subtests
+    if (!subTest.title.startsWith("Studi Kasus - ")) {
+      return true;
+    }
+    // Only keep matching position case study
+    return subTest.title === `Studi Kasus - ${position}`;
+  });
+
+  const questions = enabledSubtests.flatMap((subTest) =>
+    subTest.questions.map((question) => ({ ...question, subTest }))
+  );
+
+  const rawAnswers: Record<string, string | { answer: string; llmScore?: number }> = {};
+  
+  // Fill MCQ answers
+  const mcqQuestions = questions.filter(q => q.type === QuestionType.MCQ);
+  const mcqAns = buildMcqAnswers(mcqQuestions, accuracy);
+  Object.assign(rawAnswers, mcqAns);
+
+  // Fill Essay answers
+  const essayQuestions = questions.filter(q => q.type === QuestionType.ESSAY);
+  essayQuestions.forEach(q => {
+    rawAnswers[q.id] = {
+      answer: essayAnswers[q.body] ?? `Jawaban kandidat untuk ${q.body}`,
+      llmScore: 80,
+    };
+  });
+
   const responseInputs = questions.map((question) => {
     const raw = rawAnswers[question.id];
     if (typeof raw === "string") {
@@ -67,7 +75,7 @@ async function createScoredAttempt(
     return {
       questionId: question.id,
       answer: raw?.answer ?? "",
-      manualScore: raw?.manualScore ?? null,
+      manualScore: null,
       llmScore: raw?.llmScore ?? null,
       autoScore: null,
     };
@@ -80,6 +88,7 @@ async function createScoredAttempt(
       sessionId: session.id,
       candidateName,
       candidateEmail,
+      position,
       startedAt: new Date(),
       submittedAt: new Date(),
       status,
@@ -113,63 +122,10 @@ async function createScoredAttempt(
     },
   });
 
-  await prisma.proctoringLog.createMany({
-    data: [
-      { attemptId: attempt.id, event: "TAB_SWITCH", metadata: { note: "Seeded demo event" } },
-      { attemptId: attempt.id, event: "FOCUS_LOSS", metadata: { note: "Seeded demo event" } },
-    ],
-  });
-
   await prisma.testSession.update({
     where: { id: session.id },
     data: { useCount: { increment: 1 } },
   });
-}
-
-async function createDemoAttempts(companyId: string) {
-  const tests = await prisma.test.findMany({
-    where: { companyId },
-    include: {
-      sessions: true,
-      subTests: {
-        include: { questions: { orderBy: { order: "asc" } } },
-        orderBy: { order: "asc" },
-      },
-    },
-  });
-
-  const disc = tests.find((test) => test.title === "DISC Personality");
-  const logic = tests.find((test) => test.title === "Logic & IQ");
-  const ist = tests.find((test) => test.title === "IST Intelligence Battery");
-  const interview = tests.find((test) => test.title === "Interview Assessment");
-
-  if (disc && disc.sessions[0]) {
-    await createScoredAttempt(disc, disc.sessions[0], "Alya Putri", "alya.putri@example.com", (questions) => buildScaleAnswers(questions, "D"));
-    await createScoredAttempt(disc, disc.sessions[0], "Rafi Nugraha", "rafi.nugraha@example.com", (questions) => buildScaleAnswers(questions, "I"));
-  }
-
-  if (logic && logic.sessions[0]) {
-    await createScoredAttempt(logic, logic.sessions[0], "Nadia Saputra", "nadia.saputra@example.com", (questions) => buildMcqAnswers(questions, 0.8));
-    await createScoredAttempt(logic, logic.sessions[0], "Dimas Pratama", "dimas.pratama@example.com", (questions) => buildMcqAnswers(questions, 0.5));
-  }
-
-  if (ist) {
-    const sessionAll = ist.sessions.find((session) => session.code === "IST001");
-    const sessionSelective = ist.sessions.find((session) => session.code === "IST002");
-    if (sessionAll) {
-      await createScoredAttempt(ist, sessionAll, "Sarah Wijaya", "sarah.wijaya@example.com", (questions) => buildMcqAnswers(questions, 0.84));
-      await createScoredAttempt(ist, sessionAll, "Andi Maulana", "andi.maulana@example.com", (questions) => buildMcqAnswers(questions, 0.64));
-    }
-    if (sessionSelective) {
-      await createScoredAttempt(ist, sessionSelective, "Kevin Halim", "kevin.halim@example.com", (questions) => buildMcqAnswers(questions, 0.72));
-      await createScoredAttempt(ist, sessionSelective, "Mira Lestari", "mira.lestari@example.com", (questions) => buildMcqAnswers(questions, 0.56));
-    }
-  }
-
-  if (interview && interview.sessions[0]) {
-    await createScoredAttempt(interview, interview.sessions[0], "Citra Maharani", "citra.maharani@example.com", (questions) => buildEssayScores(questions, [88, 84, 91, 85, 90]));
-    await createScoredAttempt(interview, interview.sessions[0], "Bagas Ramadhan", "bagas.ramadhan@example.com", (questions) => buildEssayScores(questions, [74, 71, 78, 73, 76]));
-  }
 }
 
 async function createUsers(companyId: string) {
@@ -203,187 +159,215 @@ async function createUsers(companyId: string) {
     } else {
       await prisma.account.create({
         data: {
-        accountId: user.id,
-        providerId: "credential",
-        userId: user.id,
-        password,
+          accountId: user.id,
+          providerId: "credential",
+          userId: user.id,
+          password,
         },
       });
     }
   }
 }
 
-async function createDisc(companyId: string) {
+async function createIstAndCaseStudy(companyId: string) {
   const test = await prisma.test.create({
     data: {
       companyId,
-      title: "DISC Personality",
-      description: "Work style preference assessment.",
-      category: TestCategory.PERSONALITY,
+      title: "IST & Studi Kasus",
+      description: "Tes inteligensi IST (pilihan ganda) yang menyambung langsung dengan Studi Kasus (essay) sesuai posisi pelamar.",
+      category: TestCategory.COMPOSITE,
       scoringConfig: {
-        profileMappings: [
-          { condition: "D > I && D > S && D > C", label: "High D", description: "Dominant style" },
-          { condition: "I > D && I > S && I > C", label: "High I", description: "Influential style" },
-          { condition: "S > D && S > I && S > C", label: "High S", description: "Steady style" },
-          { condition: "C > D && C > I && C > S", label: "High C", description: "Conscientious style" },
+        compositeFormula: "SE1 + SE2 + SE3 + SE5 + SE6",
+      },
+      subTests: {
+        create: [
+          // Generic IST Subtests (MCQ)
+          {
+            title: "SE1 - Verbal Analogies",
+            description: "Menemukan hubungan kata.",
+            order: 1,
+            timeLimitSecs: 600,
+            scoringConfig: { strategy: "correct_count" },
+            questions: {
+              create: Array.from({ length: 5 }, (_, idx) => ({
+                body: `Hubungan kata analogi ke-${idx + 1}: pilih yang paling tepat.`,
+                type: QuestionType.MCQ,
+                order: idx + 1,
+                options: [option("A", "Pilihan A"), option("B", "Pilihan B"), option("C", "Pilihan C"), option("D", "Pilihan D")],
+                correctAnswer: ["A", "B", "C", "D"][idx % 4],
+                dimension: "SE1",
+                weight: 1,
+              })),
+            },
+          },
+          {
+            title: "SE2 - Number Sequences",
+            description: "Melanjutkan deret angka.",
+            order: 2,
+            timeLimitSecs: 600,
+            scoringConfig: { strategy: "correct_count" },
+            questions: {
+              create: Array.from({ length: 5 }, (_, idx) => ({
+                body: `Deret angka: ${2 + idx * 3}, ${5 + idx * 3}, ${8 + idx * 3}, ... Berapakah angka selanjutnya?`,
+                type: QuestionType.MCQ,
+                order: idx + 1,
+                options: [option("A", `${11 + idx * 3}`), option("B", `${12 + idx * 3}`), option("C", `${10 + idx * 3}`), option("D", `${13 + idx * 3}`)],
+                correctAnswer: "A",
+                dimension: "SE2",
+                weight: 1,
+              })),
+            },
+          },
+          {
+            title: "SE3 - Spatial Reasoning",
+            description: "Kemampuan ruang dan visual spasial.",
+            order: 3,
+            timeLimitSecs: 600,
+            scoringConfig: { strategy: "correct_count" },
+            questions: {
+              create: Array.from({ length: 5 }, (_, idx) => ({
+                body: `Spasial visualisasi ke-${idx + 1}: Manakah kubus hasil rotasi gambar di atas?`,
+                type: QuestionType.MCQ,
+                order: idx + 1,
+                options: [option("A", "Gambar A"), option("B", "Gambar B"), option("C", "Gambar C"), option("D", "Gambar D")],
+                correctAnswer: ["A", "B", "C", "D"][idx % 4],
+                dimension: "SE3",
+                weight: 1,
+              })),
+            },
+          },
+          {
+            title: "SE5 - Similarities",
+            description: "Menemukan kesamaan kata.",
+            order: 4,
+            timeLimitSecs: 600,
+            scoringConfig: { strategy: "correct_count" },
+            questions: {
+              create: Array.from({ length: 5 }, (_, idx) => ({
+                body: `Manakah kata yang paling mirip maknanya dengan kata ke-${idx + 1}?`,
+                type: QuestionType.MCQ,
+                order: idx + 1,
+                options: [option("A", "Opsi A"), option("B", "Opsi B"), option("C", "Opsi C"), option("D", "Opsi D")],
+                correctAnswer: ["A", "B", "C", "D"][idx % 4],
+                dimension: "SE5",
+                weight: 1,
+              })),
+            },
+          },
+          {
+            title: "SE6 - Memory",
+            description: "Tes ingatan kata dan visual.",
+            order: 5,
+            timeLimitSecs: 600,
+            scoringConfig: { strategy: "correct_count" },
+            questions: {
+              create: Array.from({ length: 5 }, (_, idx) => ({
+                body: `Apakah kata ke-${idx + 1} terdapat dalam daftar hafalan sebelumnya?`,
+                type: QuestionType.MCQ,
+                order: idx + 1,
+                options: [option("A", "Ya"), option("B", "Tidak")],
+                correctAnswer: "A",
+                dimension: "SE6",
+                weight: 1,
+              })),
+            },
+          },
+          // Case Studies (Essay) - Dynamically selected by position in start API
+          {
+            title: "Studi Kasus - Marketing",
+            description: "Uji studi kasus kompetensi pemasaran.",
+            order: 6,
+            timeLimitSecs: 1800, // 30 minutes
+            scoringConfig: { strategy: "weighted_sum" },
+            questions: {
+              create: [
+                {
+                  body: "Sebagai Marketing Manager, bagaimana Anda merancang strategi digital marketing untuk produk B2B SaaS baru dengan budget terbatas?",
+                  type: QuestionType.ESSAY,
+                  order: 1,
+                  scoringHint: "Nilai berdasarkan kejelasan strategi, pemilihan kanal berbayar vs organik, dan KPI yang realistis.",
+                  weight: 1,
+                },
+                {
+                  body: "Jelaskan langkah-langkah penanganan krisis PR jika produk utama perusahaan mengalami kebocoran data pelanggan.",
+                  type: QuestionType.ESSAY,
+                  order: 2,
+                  scoringHint: "Nilai berdasarkan kecepatan merespon, empati dalam komunikasi, dan rencana mitigasi teknis.",
+                  weight: 1,
+                }
+              ]
+            }
+          },
+          {
+            title: "Studi Kasus - Programmer",
+            description: "Uji studi kasus kompetensi pemrograman dan arsitektur perangkat lunak.",
+            order: 7,
+            timeLimitSecs: 1800,
+            scoringConfig: { strategy: "weighted_sum" },
+            questions: {
+              create: [
+                {
+                  body: "Bagaimana Anda mengoptimalkan kueri database SQL yang lambat pada tabel transaksi yang memiliki jutaan baris data?",
+                  type: QuestionType.ESSAY,
+                  order: 1,
+                  scoringHint: "Nilai berdasarkan pemahaman tentang indeks, analisis execution plan (EXPLAIN), partition, dan caching.",
+                  weight: 1,
+                },
+                {
+                  body: "Jelaskan perbedaan arsitektur Monolith vs Microservices. Kapan sebaiknya kita mulai memigrasikan sistem monolith ke microservices?",
+                  type: QuestionType.ESSAY,
+                  order: 2,
+                  scoringHint: "Nilai berdasarkan pemahaman trade-off overhead komunikasi jaringan, batas domain konteks, dan kompleksitas deployment.",
+                  weight: 1,
+                }
+              ]
+            }
+          }
         ],
       },
-      subTests: {
-        create: {
-          title: "DISC Assessment",
-          order: 1,
-          scoringConfig: { strategy: "sum_by_dimension" },
-          questions: {
-            create: Array.from({ length: 20 }, (_, index) => {
-              const dims = ["D", "I", "S", "C"];
-              const dimension = dims[index % dims.length];
-              return {
-                body: `I tend to show ${dimension}-style behavior in workplace situations ${index + 1}.`,
-                type: QuestionType.SCALE,
-                order: index + 1,
-                options: { min: 1, max: 5, minLabel: "Strongly Disagree", maxLabel: "Strongly Agree" },
-                dimension,
-                weight: 1,
-              };
-            }),
-          },
-        },
-      },
     },
-    include: { subTests: true },
+    include: { subTests: { include: { questions: true } } },
   });
 
-  await prisma.testSession.create({
+  const session = await prisma.testSession.create({
     data: {
       testId: test.id,
-      code: "DISC01",
-      label: "Default DISC session",
-      enabledSubtestIds: test.subTests.map((subTest) => subTest.id),
+      code: "ISTCS1",
+      label: "Sesi Ujian IST + Studi Kasus",
+      enabledSubtestIds: test.subTests.map((s) => s.id), // Enable all so dynamic filter can run
     },
   });
-}
 
-async function createLogic(companyId: string) {
-  const test = await prisma.test.create({
-    data: {
-      companyId,
-      title: "Logic & IQ",
-      description: "Logical reasoning screening test.",
-      category: TestCategory.IQ_LOGIC,
-      scoringConfig: {},
-      subTests: {
-        create: {
-          title: "Logical Reasoning",
-          order: 1,
-          scoringConfig: { strategy: "correct_count" },
-          questions: {
-            create: Array.from({ length: 10 }, (_, index) => ({
-              body: `Logical reasoning question ${index + 1}: choose the best answer.`,
-              type: QuestionType.MCQ,
-              order: index + 1,
-              options: [option("A", "Option A"), option("B", "Option B"), option("C", "Option C"), option("D", "Option D")],
-              correctAnswer: ["A", "B", "C", "D"][index % 4],
-              weight: 1,
-            })),
-          },
-        },
-      },
-    },
-    include: { subTests: true },
-  });
+  // Create Seed attempts
+  await createScoredAttempt(
+    test,
+    session,
+    "Rafi Nugraha",
+    "rafi.nugraha@example.com",
+    "Marketing",
+    0.8,
+    {
+      "Sebagai Marketing Manager, bagaimana Anda merancang strategi digital marketing untuk produk B2B SaaS baru dengan budget terbatas?":
+        "Fokus pada SEO konten, pemasaran inbound melalui artikel edukatif di LinkedIn, serta memanfaatkan uji coba gratis (freemium) untuk mengakuisisi pengguna awal secara organik.",
+      "Jelaskan langkah-langkah penanganan krisis PR jika produk utama perusahaan mengalami kebocoran data pelanggan.":
+        "Pertama, akui masalah dalam 2 jam pertama. Rilis pernyataan maaf, tutup celah keamanan, dan tawarkan kompensasi pemantauan kredit gratis kepada korban kebocoran."
+    }
+  );
 
-  await prisma.testSession.create({
-    data: { testId: test.id, code: "IQ0001", label: "Default IQ session", enabledSubtestIds: test.subTests.map((subTest) => subTest.id) },
-  });
-}
-
-async function createIst(companyId: string) {
-  const subtests = [
-    ["SE1", "Number Sequences", true],
-    ["SE2", "Verbal Analogies", true],
-    ["SE3", "Spatial Reasoning", true],
-    ["SE4", "Arithmetic", false],
-    ["SE5", "Similarities", true],
-    ["SE6", "Memory", true],
-  ] as const;
-
-  const test = await prisma.test.create({
-    data: {
-      companyId,
-      title: "IST Intelligence Battery",
-      description: "Composite intelligence battery with selectable subtests.",
-      category: TestCategory.COMPOSITE,
-      scoringConfig: { compositeFormula: "SE1 + SE2 + SE3 + SE5 + SE6" },
-      subTests: {
-        create: subtests.map(([code, title, isEnabled], index) => ({
-          title: code,
-          description: title,
-          order: index + 1,
-          isEnabled,
-          timeLimitSecs: 600,
-          scoringConfig: { strategy: "correct_count" },
-          questions: {
-            create: Array.from({ length: 10 }, (_, questionIndex) => ({
-              body: `${title} question ${questionIndex + 1}.`,
-              type: QuestionType.MCQ,
-              order: questionIndex + 1,
-              options: [option("A", "Option A"), option("B", "Option B"), option("C", "Option C"), option("D", "Option D")],
-              correctAnswer: ["A", "B", "C", "D"][questionIndex % 4],
-              dimension: code,
-              weight: 1,
-            })),
-          },
-        })),
-      },
-    },
-    include: { subTests: true },
-  });
-
-  const enabled = test.subTests.filter((subTest) => subTest.isEnabled);
-  await prisma.testSession.create({
-    data: { testId: test.id, code: "IST001", label: "IST all enabled", enabledSubtestIds: enabled.map((subTest) => subTest.id) },
-  });
-  await prisma.testSession.create({
-    data: {
-      testId: test.id,
-      code: "IST002",
-      label: "IST cohort without SE2",
-      enabledSubtestIds: enabled.filter((subTest) => subTest.title !== "SE2").map((subTest) => subTest.id),
-    },
-  });
-}
-
-async function createInterview(companyId: string) {
-  const test = await prisma.test.create({
-    data: {
-      companyId,
-      title: "Interview Assessment",
-      description: "Structured essay interview assessment.",
-      category: TestCategory.INTERVIEW,
-      scoringConfig: { autoLlmReview: true },
-      subTests: {
-        create: {
-          title: "Structured Interview",
-          order: 1,
-          scoringConfig: { strategy: "weighted_sum" },
-          questions: {
-            create: Array.from({ length: 5 }, (_, index) => ({
-              body: `Describe a concrete work example for competency ${index + 1}.`,
-              type: QuestionType.ESSAY,
-              order: index + 1,
-              scoringHint: "Score 0-100 based on specificity, relevance, outcome, and reflection.",
-              weight: 1,
-            })),
-          },
-        },
-      },
-    },
-    include: { subTests: true },
-  });
-
-  await prisma.testSession.create({
-    data: { testId: test.id, code: "INT001", label: "Default interview session", enabledSubtestIds: test.subTests.map((subTest) => subTest.id) },
-  });
+  await createScoredAttempt(
+    test,
+    session,
+    "Sarah Wijaya",
+    "sarah.wijaya@example.com",
+    "Programmer",
+    0.9,
+    {
+      "Bagaimana Anda mengoptimalkan kueri database SQL yang lambat pada tabel transaksi yang memiliki jutaan baris data?":
+        "Membuat indeks pada kolom filter (WHERE), menghindari SELECT *, mengoptimalkan JOIN, menggunakan redis untuk data yang sering diakses, dan menerapkan database partitioning.",
+      "Jelaskan perbedaan arsitektur Monolith vs Microservices. Kapan sebaiknya kita mulai memigrasikan sistem monolith ke microservices?":
+        "Monolith menggabungkan semua modul dalam satu codebase. Microservices memisahkannya ke service independen. Migrasi dilakukan saat skalabilitas tim terhambat dan service tertentu butuh scaling ekstrim."
+    }
+  );
 }
 
 async function main() {
@@ -403,13 +387,10 @@ async function main() {
   await prisma.session.deleteMany();
   await prisma.user.deleteMany();
   await prisma.company.deleteMany();
+
   const company = await prisma.company.create({ data: { name: "Gosyen HR", slug: "gosyen" } });
   await createUsers(company.id);
-  await createDisc(company.id);
-  await createLogic(company.id);
-  await createIst(company.id);
-  await createInterview(company.id);
-  await createDemoAttempts(company.id);
+  await createIstAndCaseStudy(company.id);
 }
 
 main()

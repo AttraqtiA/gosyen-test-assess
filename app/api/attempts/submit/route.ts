@@ -23,9 +23,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Attempt not found." }, { status: 404 });
   }
 
-  const enabledSubtests = attempt.session
-    ? attempt.test.subTests.filter((subTest) => attempt.session?.enabledSubtestIds.includes(subTest.id))
-    : attempt.test.subTests.filter((subTest) => subTest.isEnabled);
+  const sessionEnabledIds = attempt.session?.enabledSubtestIds as string[] ?? [];
+  const enabledSubtests = attempt.test.subTests.filter((subTest) => {
+    if (attempt.session && !sessionEnabledIds.includes(subTest.id)) {
+      return false;
+    }
+    if (!attempt.session && !subTest.isEnabled) {
+      return false;
+    }
+    if (subTest.title.startsWith("Studi Kasus - ")) {
+      const positionName = subTest.title.replace("Studi Kasus - ", "").trim();
+      return positionName === attempt.position;
+    }
+    return true;
+  });
   const questions = enabledSubtests.flatMap((subTest) => subTest.questions.map((question) => ({ ...question, subTest })));
   const responseInputs = questions
     .filter((question) => payload.data.answers[question.id] !== undefined)

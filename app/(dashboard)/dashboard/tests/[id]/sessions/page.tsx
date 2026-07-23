@@ -34,7 +34,7 @@ export default async function SessionsPage({ params }: { params: Promise<{ id: s
               <span className="status-pill status-pill--inactive">{session.useCount}{session.maxUses ? ` / ${session.maxUses}` : ""} uses</span>
             </div>
             <p className="text-sm text-[var(--muted)]">{appUrl}/take?code={session.code}</p>
-            <p className="text-xs text-[var(--muted)]">Enabled: {test.subTests.filter((subTest) => session.enabledSubtestIds.includes(subTest.id)).map((subTest) => subTest.title).join(", ")}</p>
+            <p className="text-xs text-[var(--muted)]">Enabled: {test.subTests.filter((subTest) => (session.enabledSubtestIds as string[] ?? []).includes(subTest.id)).map((subTest) => subTest.title).join(", ")}</p>
           </article>
         ))}
       </section>

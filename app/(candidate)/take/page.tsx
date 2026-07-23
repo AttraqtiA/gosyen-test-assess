@@ -34,19 +34,86 @@ function TakePageContent() {
   const [code, setCode] = useState(params.get("code") ?? "");
   const [test, setTest] = useState<ActiveTest | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const store = useTestStore();
+
+  // Multi-step start form states
+  const [sessionVerified, setSessionVerified] = useState(false);
+  const [testInfo, setTestInfo] = useState<{ testTitle: string; testDescription: string | null; positions: string[] } | null>(null);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [selectedPosition, setSelectedPosition] = useState("");
 
   const questions = useMemo(() => test?.subTests.flatMap((subTest) => subTest.questions.map((question) => ({ ...question, subTestTitle: subTest.title }))) ?? [], [test]);
   const currentQuestion = questions[store.currentQuestionIndex];
 
+  // Auto-verify session if code is present in URL query
+  useEffect(() => {
+    const codeParam = params.get("code");
+    if (codeParam && codeParam.length === 6) {
+      setCode(codeParam.toUpperCase());
+      const verify = async (sessionCode: string) => {
+        setError(null);
+        setLoading(true);
+        try {
+          const res = await fetch(`/api/attempts/start?code=${sessionCode}`);
+          const data = await res.json();
+          if (res.ok) {
+            setTestInfo(data);
+            setSessionVerified(true);
+            if (data.positions && data.positions.length > 0) {
+              setSelectedPosition(data.positions[0]);
+            }
+          } else {
+            setError(data.error ?? "Invalid session code.");
+          }
+        } catch (err) {
+          setError("Failed to verify session.");
+        } finally {
+          setLoading(false);
+        }
+      };
+      void verify(codeParam.toUpperCase());
+    }
+  }, [params]);
+
+  async function verifySession() {
+    setError(null);
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/attempts/start?code=${code}`);
+      const data = await response.json();
+      if (!response.ok) {
+        setError(data.error ?? "Invalid session code.");
+        return;
+      }
+      setTestInfo(data);
+      setSessionVerified(true);
+      if (data.positions && data.positions.length > 0) {
+        setSelectedPosition(data.positions[0]);
+      }
+    } catch (err) {
+      setError("Failed to verify session.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function start() {
     setError(null);
+    setLoading(true);
     const response = await fetch("/api/attempts/start", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ code }),
+      body: JSON.stringify({
+        code,
+        candidateName: name,
+        candidateEmail: email,
+        position: selectedPosition,
+      }),
     });
     const data = (await response.json()) as { attemptId?: string; test?: ActiveTest; error?: string };
+    setLoading(false);
     if (!response.ok || !data.attemptId || !data.test) {
       setError(data.error ?? "Could not start assessment.");
       return;
@@ -101,16 +168,70 @@ function TakePageContent() {
       <main className="container-page page-stack">
         <section className="hero-panel">
           <div className="hero-content lg:grid-cols-[1fr_420px] lg:items-center">
-          <div className="hero-copy">
+            <div className="hero-copy">
               <p className="eyebrow">Masuk dengan kode</p>
               <h1 className="hero-title">Masukkan kode ujian dan mulai sesi.</h1>
-              <p className="hero-body">Halaman masuk ini hanya meminta kode sesi. Nama, email, posisi, dan detail lain dapat ditambahkan admin pada tahap berikutnya.</p>
+              <p className="hero-body">Silakan masukkan kode sesi ujian Anda, isi nama lengkap, alamat email, dan pilih posisi pekerjaan yang Anda lamar.</p>
             </div>
             <div className="panel grid gap-4 p-6">
               <h2 className="text-2xl font-semibold">Start assessment</h2>
-          <Input placeholder="Session code" value={code} onChange={(event) => setCode(event.target.value.toUpperCase())} />
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <Button onClick={start}>Begin</Button>
+              
+              {!sessionVerified ? (
+                <>
+                  <Input 
+                    placeholder="Session code" 
+                    value={code} 
+                    onChange={(event) => setCode(event.target.value.toUpperCase())} 
+                    maxLength={6}
+                  />
+                  {error && <p className="text-sm text-red-600">{error}</p>}
+                  <Button onClick={verifySession} disabled={code.length !== 6 || loading}>
+                    {loading ? "Verifying..." : "Verify Code"}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <div className="text-sm text-slate-600 mb-2">
+                    <span className="font-semibold text-slate-800">Ujian:</span> {testInfo?.testTitle}
+                  </div>
+                  <Input 
+                    placeholder="Nama Lengkap" 
+                    value={name} 
+                    onChange={(event) => setName(event.target.value)} 
+                  />
+                  <Input 
+                    placeholder="Email" 
+                    type="email"
+                    value={email} 
+                    onChange={(event) => setEmail(event.target.value)} 
+                  />
+                  
+                  {testInfo?.positions && testInfo.positions.length > 0 && (
+                    <div className="grid gap-1">
+                      <label className="text-xs font-semibold text-slate-600">Posisi yang Dilamar</label>
+                      <select 
+                        value={selectedPosition} 
+                        onChange={(e) => setSelectedPosition(e.target.value)}
+                        className="h-10 rounded-md border border-slate-300 px-3 text-sm bg-white"
+                      >
+                        {testInfo.positions.map((pos) => (
+                          <option key={pos} value={pos}>{pos}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  
+                  {error && <p className="text-sm text-red-600">{error}</p>}
+                  <div className="flex gap-2">
+                    <Button variant="secondary" onClick={() => setSessionVerified(false)} disabled={loading}>
+                      Back
+                    </Button>
+                    <Button onClick={start} disabled={!name || !email || loading} className="flex-1">
+                      {loading ? "Starting..." : "Begin"}
+                    </Button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </section>

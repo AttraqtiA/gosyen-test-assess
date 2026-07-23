@@ -42,6 +42,7 @@ export const startAttemptSchema = z.object({
   code: z.string().trim().min(6).max(6),
   candidateName: z.string().trim().min(1).optional(),
   candidateEmail: z.string().trim().email().optional(),
+  position: z.string().optional(),
   metadata: z.record(z.string()).optional(),
 });
 
