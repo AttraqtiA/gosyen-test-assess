@@ -305,13 +305,13 @@ function TakePageContent() {
                       <span className="font-semibold text-[var(--foreground)]">Ujian:</span> {testInfo?.testTitle}
                     </div>
 
-                    <div className="p-4 border border-[var(--border)] rounded-lg bg-[var(--surface-soft)] text-xs text-[var(--foreground)] flex flex-col gap-2 max-h-60 overflow-y-auto leading-relaxed">
-                      <p className="font-bold text-sm text-[var(--primary)] mb-1">Peraturan & Petunjuk Pengerjaan:</p>
+                    <div className="p-4 border border-[var(--border)] rounded-lg bg-[var(--surface-soft)] text-sm text-[var(--foreground)] flex flex-col gap-2 max-h-60 overflow-y-auto leading-relaxed">
+                      <p className="font-bold text-base text-[var(--primary)] mb-1">Peraturan & Petunjuk Pengerjaan:</p>
                       <ol className="list-decimal pl-4 flex flex-col gap-2">
                         <li><strong>Batas Waktu:</strong> Ujian memiliki batas waktu pengerjaan per sub-tes. Batas waktu akan mulai dihitung mundur ketika Anda mengeklik tombol <strong>Mulai Ujian</strong>.</li>
                         <li><strong>Mode Layar Penuh (Fullscreen):</strong> Ujian wajib dikerjakan dalam mode layar penuh. Sistem akan memicu mode layar penuh otomatis.</li>
                         <li><strong>Sistem Keamanan & Proktor:</strong> Sistem proktor otomatis akan mencatat pelanggaran jika Anda melakukan:
-                          <ul className="list-disc pl-4 mt-1 flex flex-col gap-1 text-[var(--muted)]">
+                          <ul className="list-disc pl-4 mt-1 flex flex-col gap-1 text-[var(--muted)] text-xs">
                             <li>Berpindah ke tab atau membuka jendela aplikasi lain (Tab Switch).</li>
                             <li>Mengurangi fokus jendela browser (Focus Loss).</li>
                             <li>Keluar dari mode layar penuh (Fullscreen Exit).</li>
@@ -328,7 +328,7 @@ function TakePageContent() {
                         onChange={(e) => setAgreedToRules(e.target.checked)} 
                         className="mt-0.5 h-4 w-4 rounded border-[var(--border)] text-[var(--primary)] focus:ring-[var(--primary)]"
                       />
-                      <span className="text-xs text-[var(--foreground)] font-medium leading-tight">
+                      <span className="text-sm text-[var(--foreground)] font-medium leading-tight">
                         Saya telah membaca, memahami, dan menyetujui seluruh peraturan pengerjaan ujian di atas.
                       </span>
                     </label>
