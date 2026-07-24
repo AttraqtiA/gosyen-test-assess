@@ -17,7 +17,7 @@ export function MCQQuestion({ questionId, options, value, onChange }: Props) {
       {items.map((item) => (
         <label key={item.id} className="flex cursor-pointer items-center gap-3 rounded-md border border-[var(--border)] bg-[var(--surface-soft)] p-3 text-sm">
           <input type="radio" name={questionId} checked={value === item.id} onChange={() => onChange(item.id)} />
-          <span>{item.label}</span>
+          <span dangerouslySetInnerHTML={{ __html: item.label }} />
         </label>
       ))}
     </div>

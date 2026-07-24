@@ -17,6 +17,7 @@ interface TestStore {
   prevQuestion: () => void;
   addViolation: (event: ProctoringEvent) => void;
   submit: () => Promise<void>;
+  goToQuestionIndex: (index: number) => void;
 }
 
 export const useTestStore = create<TestStore>((set, get) => ({
@@ -28,7 +29,27 @@ export const useTestStore = create<TestStore>((set, get) => ({
   violations: [],
   isSubmitted: false,
   setAttempt: (attemptId) => set({ attemptId, startedAt: new Date(), isSubmitted: false }),
-  setAnswer: (questionId, answer) => set((state) => ({ answers: { ...state.answers, [questionId]: answer } })),
+  setAnswer: (questionId, answer) => {
+    set((state) => {
+      const nextAnswers = { ...state.answers, [questionId]: answer };
+      const attemptId = state.attemptId;
+      
+      // Fire and forget autosave
+      if (attemptId) {
+        // Simple debounce using a global timeout (ok for singleton store)
+        clearTimeout((window as any).__autosaveTimeout);
+        (window as any).__autosaveTimeout = setTimeout(() => {
+          fetch("/api/attempts/autosave", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ attemptId, answers: nextAnswers }),
+          }).catch(console.error);
+        }, 1500);
+      }
+      
+      return { answers: nextAnswers };
+    });
+  },
   nextQuestion: () => set((state) => ({ currentQuestionIndex: state.currentQuestionIndex + 1 })),
   prevQuestion: () => set((state) => ({ currentQuestionIndex: Math.max(0, state.currentQuestionIndex - 1) })),
   addViolation: (event) => set((state) => ({ violations: [...state.violations, event] })),
@@ -44,4 +65,5 @@ export const useTestStore = create<TestStore>((set, get) => ({
     });
     set({ isSubmitted: true });
   },
+  goToQuestionIndex: (index) => set({ currentQuestionIndex: index }),
 }));

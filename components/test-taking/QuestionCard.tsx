@@ -26,7 +26,10 @@ export function QuestionCard({ question, value, onChange }: Props) {
     <section className="panel grid gap-5 p-5">
       <div>
         <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">{question.type.replace("_", " ")}</div>
-        <h2 className="text-lg font-semibold text-[var(--foreground)]">{question.body}</h2>
+        <h2 
+          className="text-lg font-semibold text-[var(--foreground)]"
+          dangerouslySetInnerHTML={{ __html: question.body }}
+        />
       </div>
       {question.type === "MCQ" && <MCQQuestion questionId={question.id} options={question.options} value={value} onChange={onChange} />}
       {question.type === "SCALE" && <ScaleQuestion options={question.options} value={value} onChange={onChange} />}

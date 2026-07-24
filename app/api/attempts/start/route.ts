@@ -105,6 +105,7 @@ export async function POST(request: Request) {
       timeLimitMinutes: session.test.timeLimitMinutes,
       showResultsToCandidate: session.test.showResultsToCandidate,
       candidateFields: session.test.candidateFields,
+      proctoringConfig: (session.test.scoringConfig as any)?.proctoringConfig,
       subTests: enabledSubtests,
     },
   });

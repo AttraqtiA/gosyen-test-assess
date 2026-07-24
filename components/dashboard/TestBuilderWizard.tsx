@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/input";
-import { Plus, Trash2, ArrowUp, ArrowDown, ChevronRight, Save, LayoutGrid, HelpCircle, Check, Settings2 } from "lucide-react";
+import { Plus, Trash2, ArrowUp, ArrowDown, ChevronRight, Save, LayoutGrid, HelpCircle, Check, Settings2, Upload } from "lucide-react";
 
 const steps = ["Test Info", "Structure (SubTests)", "Questions", "Scoring Config", "Review & Save"];
 
@@ -54,6 +54,8 @@ export function TestBuilderWizard() {
   const [showResultsToCandidate, setShowResultsToCandidate] = useState(false);
   const [passingThreshold, setPassingThreshold] = useState<number | null>(null);
   const [compositeFormula, setCompositeFormula] = useState("");
+  const [freezeOnTabSwitch, setFreezeOnTabSwitch] = useState(false);
+  const [freezeDurationSecs, setFreezeDurationSecs] = useState<number | null>(10);
   const [subTests, setSubTests] = useState<SubTest[]>([]);
 
   // Editor states
@@ -81,6 +83,8 @@ export function TestBuilderWizard() {
         setShowResultsToCandidate(data.showResultsToCandidate ?? false);
         setPassingThreshold(data.passingThreshold);
         setCompositeFormula(data.scoringConfig?.compositeFormula ?? "");
+        setFreezeOnTabSwitch(data.scoringConfig?.proctoringConfig?.freezeOnTabSwitch ?? false);
+        setFreezeDurationSecs(data.scoringConfig?.proctoringConfig?.freezeDurationSecs ?? 10);
         
         // Map subtests and sanitize questions
         const mappedSubTests = (data.subTests ?? []).map((sub: any) => ({
@@ -130,6 +134,7 @@ export function TestBuilderWizard() {
         passingThreshold: passingThreshold ? Number(passingThreshold) : null,
         scoringConfig: {
           compositeFormula: compositeFormula || undefined,
+          proctoringConfig: freezeOnTabSwitch ? { freezeOnTabSwitch, freezeDurationSecs: freezeDurationSecs ? Number(freezeDurationSecs) : 10 } : undefined,
         },
         subTests: subTests.map((sub, idx) => ({
           id: sub.id,
@@ -191,6 +196,103 @@ export function TestBuilderWizard() {
     const updated = subTests.filter((_, idx) => idx !== index);
     setSubTests(updated);
     setActiveSubTestIndex(Math.max(0, index - 1));
+  }
+
+  const [uploadingIdx, setUploadingIdx] = useState<number | null>(null);
+
+  async function handleSubTestFileUpload(idx: number, file: File) {
+    setUploadingIdx(idx);
+    const formData = new FormData();
+    formData.append("file", file);
+    try {
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      if (!response.ok) throw new Error("Upload failed");
+      const data = await response.json();
+      
+      const isImg = data.type.startsWith("image/");
+      const insertText = isImg
+        ? `<img src="${data.url}" style="max-width:100%; height:auto; margin:10px 0; border-radius:8px;" alt="${data.name}" />`
+        : `<a href="${data.url}" target="_blank" class="text-blue-600 underline hover:text-blue-800">Unduh File (${data.name})</a>`;
+      
+      const updated = [...subTests];
+      const prevDesc = updated[idx]!.description || "";
+      updated[idx]!.description = prevDesc + (prevDesc ? "\n" : "") + insertText;
+      setSubTests(updated);
+    } catch (err: any) {
+      alert("Gagal mengunggah file: " + err.message);
+    } finally {
+      setUploadingIdx(null);
+    }
+  }
+
+  const [uploadingQIdx, setUploadingQIdx] = useState<number | null>(null);
+
+  async function handleQuestionFileUpload(idx: number, file: File) {
+    setUploadingQIdx(idx);
+    const formData = new FormData();
+    formData.append("file", file);
+    try {
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      if (!response.ok) throw new Error("Upload failed");
+      const data = await response.json();
+      
+      const isImg = data.type.startsWith("image/");
+      const insertText = isImg
+        ? `<img src="${data.url}" style="max-width:100%; height:auto; margin:10px 0; border-radius:8px;" alt="${data.name}" />`
+        : `<a href="${data.url}" target="_blank" class="text-blue-600 underline hover:text-blue-800">Unduh File (${data.name})</a>`;
+      
+      const activeSub = subTests[activeSubTestIndex]!;
+      const updatedQuestions = [...activeSub.questions];
+      const prevBody = updatedQuestions[idx]!.body || "";
+      
+      updateQuestion(idx, "body", prevBody + (prevBody ? "\n" : "") + insertText);
+    } catch (err: any) {
+      alert("Gagal mengunggah file: " + err.message);
+    } finally {
+      setUploadingQIdx(null);
+    }
+  }
+
+  const [uploadingOptQIdx, setUploadingOptQIdx] = useState<number | null>(null);
+  const [uploadingOptIdx, setUploadingOptIdx] = useState<number | null>(null);
+
+  async function handleOptionFileUpload(qIdx: number, oIdx: number, file: File) {
+    setUploadingOptQIdx(qIdx);
+    setUploadingOptIdx(oIdx);
+    const formData = new FormData();
+    formData.append("file", file);
+    try {
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      if (!response.ok) throw new Error("Upload failed");
+      const data = await response.json();
+      
+      const isImg = data.type.startsWith("image/");
+      const insertText = isImg
+        ? `<img src="${data.url}" style="max-width:100%; height:auto; margin:5px 0; border-radius:4px;" alt="${data.name}" />`
+        : `<a href="${data.url}" target="_blank" class="text-blue-600 underline hover:text-blue-800 font-normal">File: ${data.name}</a>`;
+      
+      const activeSub = subTests[activeSubTestIndex]!;
+      const q = activeSub.questions[qIdx]!;
+      const updatedOpts = [...q.options];
+      const prevLabel = updatedOpts[oIdx]!.label || "";
+      
+      updatedOpts[oIdx]!.label = prevLabel + (prevLabel ? " " : "") + insertText;
+      updateQuestion(qIdx, "options", updatedOpts);
+    } catch (err: any) {
+      alert("Gagal mengunggah file: " + err.message);
+    } finally {
+      setUploadingOptQIdx(null);
+      setUploadingOptIdx(null);
+    }
   }
 
   // Reorder subtest
@@ -411,6 +513,28 @@ export function TestBuilderWizard() {
                 />
                 Tampilkan hasil nilai/profile ke kandidat setelah submit
               </label>
+              <div className="border-t border-[var(--border)] pt-4 mt-2 flex flex-col gap-3">
+                <label className="flex items-center gap-3 text-sm font-semibold text-[var(--foreground)]">
+                  <input
+                    type="checkbox"
+                    checked={freezeOnTabSwitch}
+                    onChange={(e) => setFreezeOnTabSwitch(e.target.checked)}
+                    className="h-4 w-4 rounded border-[var(--border)] text-[var(--danger)] focus:ring-[var(--danger)]"
+                  />
+                  Terapkan Freeze (layar membeku) saat kandidat pindah tab
+                </label>
+                {freezeOnTabSwitch && (
+                  <div className="grid gap-1.5 ml-7 w-48">
+                    <label className="text-xs font-semibold text-[var(--muted)]">Durasi Freeze (detik)</label>
+                    <Input
+                      type="number"
+                      placeholder="10"
+                      value={freezeDurationSecs ?? ""}
+                      onChange={(e) => setFreezeDurationSecs(e.target.value ? Number(e.target.value) : null)}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -454,15 +578,35 @@ export function TestBuilderWizard() {
                     </div>
                   </div>
                   <div className="grid grid-cols-[1fr_200px] gap-4">
-                    <Input
-                      placeholder="Keterangan singkat sub-tes..."
-                      value={sub.description ?? ""}
-                      onChange={(e) => {
-                        const updated = [...subTests];
-                        updated[idx]!.description = e.target.value;
-                        setSubTests(updated);
-                      }}
-                    />
+                    <div className="flex flex-col gap-2">
+                      <Textarea
+                        placeholder="Petunjuk, contoh pengerjaan, atau deskripsi sub-tes (dapat menggunakan HTML)..."
+                        value={sub.description ?? ""}
+                        onChange={(e) => {
+                          const updated = [...subTests];
+                          updated[idx]!.description = e.target.value;
+                          setSubTests(updated);
+                        }}
+                        rows={3}
+                      />
+                      <div className="flex items-center gap-2">
+                        <label className="cursor-pointer inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 bg-[var(--surface-soft)] hover:bg-[var(--border)] border border-[var(--border)] rounded text-[var(--foreground)] transition-colors">
+                          <Upload size={12} />
+                          {uploadingIdx === idx ? "Uploading..." : "Unggah Gambar / File"}
+                          <input
+                            type="file"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                void handleSubTestFileUpload(idx, file);
+                              }
+                            }}
+                          />
+                        </label>
+                        <span className="text-[10px] text-[var(--muted)]">Format: JPG, PNG, PDF, dll. (Otomatis disisipkan ke teks)</span>
+                      </div>
+                    </div>
                     <div className="flex items-center gap-2">
                       <Input
                         type="number"
@@ -524,12 +668,31 @@ export function TestBuilderWizard() {
                       <div className="flex justify-between items-start gap-4">
                         <div className="flex-1">
                           <span className="text-xs font-semibold text-[var(--muted)] block mb-1">SOAL #{idx + 1}</span>
-                          <Textarea
-                            placeholder="Tuliskan pertanyaan disini..."
-                            value={q.body}
-                            onChange={(e) => updateQuestion(idx, "body", e.target.value)}
-                            rows={3}
-                          />
+                          <div className="flex flex-col gap-2">
+                            <Textarea
+                              placeholder="Tuliskan pertanyaan disini..."
+                              value={q.body}
+                              onChange={(e) => updateQuestion(idx, "body", e.target.value)}
+                              rows={3}
+                            />
+                            <div className="flex items-center gap-2">
+                              <label className="cursor-pointer inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 bg-[var(--surface-soft)] hover:bg-[var(--border)] border border-[var(--border)] rounded text-[var(--foreground)] transition-colors">
+                                <Upload size={12} />
+                                {uploadingQIdx === idx ? "Uploading..." : "Unggah Gambar / File"}
+                                <input
+                                  type="file"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      void handleQuestionFileUpload(idx, file);
+                                    }
+                                  }}
+                                />
+                              </label>
+                              <span className="text-[10px] text-[var(--muted)]">Format: JPG, PNG, PDF, dll. (Otomatis disisipkan ke soal)</span>
+                            </div>
+                          </div>
                         </div>
                         <div className="flex flex-col gap-2 w-48">
                           <label className="text-xs font-semibold text-[var(--muted)]">Tipe Soal</label>
@@ -562,15 +725,30 @@ export function TestBuilderWizard() {
                             q.options.map((opt: Option, oIdx: number) => (
                               <div key={opt.id} className="flex items-center gap-2">
                                 <span className="font-mono text-xs font-semibold text-[var(--foreground)]">{opt.id}</span>
-                                <Input
-                                  value={opt.label}
-                                  onChange={(e) => {
-                                    const updatedOpts = [...q.options];
-                                    updatedOpts[oIdx]!.label = e.target.value;
-                                    updateQuestion(idx, "options", updatedOpts);
-                                  }}
-                                  className="h-8 text-xs"
-                                />
+                                <div className="flex-1 flex items-center gap-1">
+                                  <Input
+                                    value={opt.label}
+                                    onChange={(e) => {
+                                      const updatedOpts = [...q.options];
+                                      updatedOpts[oIdx]!.label = e.target.value;
+                                      updateQuestion(idx, "options", updatedOpts);
+                                    }}
+                                    className="h-8 text-xs flex-1"
+                                  />
+                                  <label className="cursor-pointer p-1.5 bg-[var(--surface-soft)] hover:bg-[var(--border)] border border-[var(--border)] rounded text-[var(--foreground)] transition-colors h-8 flex items-center justify-center" title="Unggah file untuk pilihan jawaban ini">
+                                    <Upload size={12} />
+                                    <input
+                                      type="file"
+                                      className="hidden"
+                                      onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) {
+                                          void handleOptionFileUpload(idx, oIdx, file);
+                                        }
+                                      }}
+                                    />
+                                  </label>
+                                </div>
                                 <input
                                   type="radio"
                                   name={`correct-radio-${idx}`}

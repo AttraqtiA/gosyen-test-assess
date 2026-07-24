@@ -30,6 +30,10 @@ export const scoringConfigSchema = z
       )
       .optional(),
     autoLlmReview: z.boolean().optional(),
+    proctoringConfig: z.object({
+      freezeOnTabSwitch: z.boolean().optional(),
+      freezeDurationSecs: z.number().optional(),
+    }).optional(),
   })
   .passthrough();
 
